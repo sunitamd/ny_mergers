@@ -99,6 +99,10 @@ label values _merge L_source
 * keep only years that overlap
 * keep if year > 2000 & year < 2013
 
+* Total mergers across both datasets
+gen merger_combined = 1 if merger==1 | merger2==1
+replace merger_combined = 0 if merger_combined==.
+
 * Identify mergers that matched
 gen match = 1 if merger==1 & merger2==1
 replace match = 2 if merger==0 & merger2==0
@@ -108,16 +112,15 @@ replace match = 4 if merger==0 & merger2==1
 label define L_match 1 "1 Matched merger" 2 "2 Matched no-merger" 3 "3 Unmatched AHA merger" 4 "4 Unmatched Cooper merger", add
 label values match L_match
 
+* Identify matches using lagged indicators
 forvalues i=1/12 {
     local newvar "match_lag`i'"
     local aha_lag "merger_lag`i'"
-    local cooper_lag "merger2_lag`i'"
 
-    gen `newvar' = 1 if `aha_lag'==1 & `cooper_lag'==1
-    replace `newvar' = 2 if `aha_lag'==0 & `cooper_lag'==0
-    replace `newvar' = 3 if `aha_lag'==1 & `cooper_lag'==0
-    replace `newvar' = 4 if `aha_lag'==0 & `cooper_lag'==1
-    
+    gen `newvar' = 1 if `aha_lag'==1 & merger2==1
+    replace `newvar' = 2 if `aha_lag'==0 & merger2==0
+    replace `newvar' = 4 if `aha_lag'==0 & merger2==1
+
     label values `newvar' L_match
 }
 
