@@ -63,11 +63,13 @@ forvalues i=2/10 {
 * Create bandwidth merger indicator
 forvalues i=1/10 {
     local merger_bw = "merger_bw`i'"
+    local lag = "merger_lag`i'"
+    local lead = "merger_lead`i'"
 
-    gen `merger_bw' = max(merger, merger_lag1, merger_lead1)
+    gen `merger_bw' = max(merger, `lag', `lead')
     assert `merger_bw' != .
 
-    label var `merger_bw' "AHA 1-year window merger indicator"
+    label var `merger_bw' "AHA +/- 1-year window merger indicator"
 }
 
 tempfile aha
