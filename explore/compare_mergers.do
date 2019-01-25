@@ -158,3 +158,5 @@ foreach i in 1 2 5 10 {
 
     qui drop match_temp
 }
+
+save "/gpfs/data/desailab/home/ny_mergers/data_hosp/aha_cooper_ny_2006_2012.dta", replace
