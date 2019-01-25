@@ -124,31 +124,46 @@ keep if serv==10 | regexm(id, "0[0-8][0-9][1-9]$")==1
 gen merger_combined = 1 if merger==1 | merger2==1
 replace merger_combined = 0 if merger_combined==.
 
-* Identify mergers that matched
-gen match = 1 if merger==1 & merger==merger2
-replace match = 2 if merger==0 & merger==merger2
-replace match = 3 if merger==1 & merger!=merger2
-replace match = 4 if merger==0 & merger2!=merger
+* Percentage of hospital-year mergers that match between AHA & Cooper
+gen match = 1 if merger==1 & merger2==1
+qui sum match
+local merger_matches = `r(sum)'
+qui sum merger
+local mergers_aha = `r(sum)'
+qui sum merger2
+global mergers_cooper = `r(sum)'
 
-label define L_match 1 "1 Matched merger" 2 "2 Matched non-merger" 3 "3 Unmatched merger" 4 "4 Unmatched non-merger", modify
-label values match L_match
+di in red round(`merger_matches'/`mergers_aha'*100,2) "% of AHA mergers match to Cooper dataset"
+di in red round(`merger_matches'/$mergers_cooper*100,2) "% of Cooper mergers matched by AHA"
 
-* Identify matches using lagged indicators
-forvalues i=1/12 {
-    local newvar "match_lag`i'"
-    local aha_lag "merger_lag`i'"
+* Consider windows of varying years
+foreach i in 1 2 5 10 {
+    local aha_merger = "merger_bw`i'"
 
-    gen `newvar' = 1 if `aha_lag'==1 & `aha_lag'==merger2
-    replace `newvar' = 2 if `aha_lag'==0 & `aha_lag'==merger2
-    replace `newvar' = 3 if `aha_lag'==1 & `aha_lag'!=merger2
-    replace `newvar' = 4 if `aha_lag'==0 & `aha_lag'!=merger2
+    qui gen match_temp = 1 if `aha_merger'==1 &  merger2==1
 
-    label values `newvar' L_match
+    qui sum match_temp
+    local merger_matches_temp = `r(sum)'
+
+    di in red "Considering a `i'-year window..."
+    di in red round(`merger_matches_temp'/$mergers_cooper*100,2) "% of Cooper mergers matched by AHA"
+    di ""
+
+    qui drop match_temp
 }
 
-* Among hospital-year observations in both datasets, how do mergers match up?
-ta match _merge if _merge==3, m
+* Consider lags of varying years
+foreach i in 1 2 5 10 {
+    local aha_merger = "merger_lag`i'"
 
-forvalues i=1/12  {
-    ta match_lag`i' _merge if _merge==3, m
+    qui gen match_temp = 1 if `aha_merger'==1 &  merger2==1
+
+    qui sum match_temp
+    local merger_matches_temp = `r(sum)'
+
+    di in red "Considering a `i'-year lag..."
+    di in red round(`merger_matches_temp'/$mergers_cooper*100,2) "% of Cooper mergers matched by AHA"
+    di ""
+
+    qui drop match_temp
 }
