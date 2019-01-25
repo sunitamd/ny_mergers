@@ -126,8 +126,15 @@ replace merger_combined = 0 if merger_combined==.
 
 * Percentage of hospital-year mergers that match between AHA & Cooper
 gen match = 1 if merger==1 & merger2==1
-qui sum match
-local merger_matches = `r(sum)'
+replace match = 2 if merger2==1 & merger!=1
+replace match = 3 if merger==1 & merger2!=1
+
+label var match "Merger concordance"
+label define L_match 1 "In AHA & Cooper" 2 "In Cooper only" 3 "In AHA only", modify
+label values match L_match
+
+qui count if match==1
+local merger_matches = `r(n)'
 qui sum merger
 local mergers_aha = `r(sum)'
 qui sum merger2
@@ -146,22 +153,6 @@ foreach i in 1 2 5 10 {
     local merger_matches_temp = `r(sum)'
 
     di in red "Considering a `i'-year window..."
-    di in red round(`merger_matches_temp'/$mergers_cooper*100,2) "% of Cooper mergers matched by AHA"
-    di ""
-
-    qui drop match_temp
-}
-
-* Consider lags of varying years
-foreach i in 1 2 5 10 {
-    local aha_merger = "merger_lag`i'"
-
-    qui gen match_temp = 1 if `aha_merger'==1 &  merger2==1
-
-    qui sum match_temp
-    local merger_matches_temp = `r(sum)'
-
-    di in red "Considering a `i'-year lag..."
     di in red round(`merger_matches_temp'/$mergers_cooper*100,2) "% of Cooper mergers matched by AHA"
     di ""
 
