@@ -11,12 +11,12 @@
 * Set locals
 ********************************************************************** 
 local mkt fcounty
+local mkt_label "County"
 
 
 ********************************************************************** 
 * Create market-year level data with HHI and merger indicators
 ********************************************************************** 
-	use "aha_combined_final_v2.dta", clear
 	use "aha_cooper_combined.dta", clear
 	
 * To do 
@@ -32,24 +32,23 @@ local mkt fcounty
 	gen mktshr = hospbd/tot_hospbd
 	gen mktshr_sq = mktshr^2
 	bysort `mkt' aha_year: egen hhi = total(mktshr_sq)
-	la var hhi "County-level HHI, Var used for market share: hospbd"
+	la var hhi "`mkt_label'-level HHI, Var used for market share: hospbd"
 
 * HHI variable construction - System
 	*Create new sys_id so no system hospitals get a unique id  
-		gen sysid_temp = _n
-		replace sysid_temp = sysid 
+		gen sysid_temp = sysid
 		
 	* Create system level market share 
 		bysort sysid_temp `mkt' aha_year: egen mktshr_sys = total (mktshr) 
 		gen mktshr_sys_sq = mktshr_sys^2
 		bysort `mkt' aha_year: egen hhi_sys = total(mktshr_sys_sq) 
-		la var "County-level HHI by system"
+		la var hhi_sys "`mkt_label'-level HHI by system"
 		
 
 * Number of hospitals
 	gen one = 1
 	bysort `mkt' aha_year: egen num_hosps = total(one)
-	la var num_hosps "Number of hospitals in market (county)"
+	la var num_hosps "Number of hospitals in market (`mkt_label')"
 
 * Indicator for any market
 	gen merge_any = cond(sys_merge == 1 | add_del_merge == 1, 1, 0)
