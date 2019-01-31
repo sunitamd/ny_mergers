@@ -22,23 +22,16 @@ use "`projdir'/data_hosp/aha_combined_final_v2.dta", clear
 	* One fstcd is missing
 		levelsof fstcd if stcd==14, local(temp)
 	replace fstcd = `temp' if fstcd==. & stcd==14
-
 	* Some mcntycd values also missing
 		levelsof mcntycd if fcounty==9003 & fcntycd==3, local(temp)
 		replace mcntycd = `temp' if fcounty==9003 & fcntycd
 
 	* Generate true unique FIPS county codes
 		gen fips = string(fstcd, "%02.0f") + string(fcntycd, "%03.0f")
-
 	* Hospital-year merger indicator
 		gen merger = cond(merge!=., 1, 0, 0)
-
 	* NY state indicator
 		gen ny = cond(fstcd==36, 1, 0)
-
-	* Indicator for analysis timeframe
-		gen time = cond(aha_year>=2006 & aha_year<=2012, 1, 0)
-
 	* Keep only data relevant for main analysis
 		gen time = cond(aha_year>=2006 & aha_year<=2012, 1, 0, 0)
 
