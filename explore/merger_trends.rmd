@@ -22,396 +22,61 @@ library(tidyverse)
 library(knitr)
 library(kableExtra)
 
-theme_set(theme_minimal())
+theme_set(theme_bw())
 ```
-
 ```{r setup, include=FALSE}
-# aha <- read_csv('../aha_combined_final_v2.csv')
-aha <- read_dta('../aha_combined_final_v2.dta')
-
-# One fstcd is missing, lookup value using stcd
-temp <- aha %>%
-    filter(stcd==14) %>%
-    select(fstcd) %>%
-    na.omit() %>%
-    pull(fstcd) %>%
-    unique()
-aha[is.na(aha$fstcd) & aha$stcd==14, 'fstcd'] <- temp
-# Some modified FIPS county codes also missing
-temp <- aha %>%
-    filter(!is.na(mcntycd), fcounty==9003, fcntycd==3) %>%
-    pull(mcntycd) %>%
-    unique()
-aha[is.na(aha$mcntycd) & aha$fcounty==9003 & aha$fcntycd==3, 'mcntycd'] <- temp
-
-# Fix merge_type & merge variables
-aha <- aha %>%
-    mutate(merger=case_when(!is.na(merge) ~ 1, TRUE ~ 0))
-
-# Create NY state indicator
-aha <- aha %>%
-    mutate(ny=case_when(fstcd==36 ~ 1, TRUE ~ 0)) %>%
-    mutate(State=case_when(ny==1~'New York', ny==0~'Other states'))
-# Create indicator for analysis timeframe
-aha <- mutate(aha, time=ifelse(aha_year>=2006 & aha_year<=2012, 1, 0))
-
-# Analysis settings
-# Market definition
-mkt_var <- "mcntycd" # county-level (modified FIPS county code)
-
-# Store aggregated tables
-metrics <- list()
+tables <- read_dta("dump/merger_trends.dta")
 ```
 
-# A. Hospital-level Merger Trends
+# Hospital-level trends
 
-```{r hospital merger share}
-# share of hospitals involved in merger by year in NY vs other states
-temp <- aha %>%
-    group_by(aha_year, ny) %>%
-        summarise(merge_share=mean(sum(merger)/n())) %>%
-        ungroup()
-
-ggplot(temp, aes(aha_year, merge_share, col=factor(ny))) +
+```{r, include=TRUE}
+tables %>% filter(table=='A') %>%
+ggplot(aes(aha_year, proportion, linetype=factor(ny))) +
     geom_line() +
-    scale_color_manual(name='', values=c('0'='lightcyan4', '1'='dodgerblue4'), labels=c('0'='Other states (avg.)', '1'='New York'), breaks=c('1', '0')) +
-    scale_x_continuous(breaks=seq(2000,2012,2)) +
-    labs(x='Year', y='Proportion', title='Share of hospitals that experienced mergers')
+    scale_linetype_manual('', breaks=c('1', '0'), labels=c('1'='New York', '0'='Other states'), values=c('1'=1, '0'=2)) +
+    scale_x_continuous(breaks=seq(2006,2012,2)) +
+    labs(x='Year', y='Proportion', title='Share of hospitals that experienced merger activity')
+```
 
-# Share of hospitals that experienced mergers
-metrics$share_hosp_mergers <- aha %>%
-    filter(time==1)  %>%
-    group_by(State) %>%
-        mutate(total_hospitals=length(unique(id))) %>%
-        summarise(Proportion=mean(sum(merger)/total_hospitals)) %>%
-        ungroup() %>%
-    arrange(State) %>%
-    mutate(Metric='Share of hosps. experienced merger') %>%
-    spread(State, Proportion)
+```{r, include=TRUE}
+tables %>%
+    filter(table=='A') %>%
+    mutate(State=ifelse(ny==1,'New York','Other states')) %>%
+    select(aha_year, State, proportion, total_hospitals) %>%
+    unite(val, proportion, total_hospitals, sep='-') %>%
+    spread(State, val) %>%
+    separate(`New York`, c('nshare', 'nhosps'), sep='-') %>%
+    separate(`Other states`, c('oshare', 'ohosps'), sep='-') %>%
+    mutate(nshare=substr(nshare,1,5), oshare=substr(oshare,1,5)) %>%
+    kable(caption='Share of hospitals that experienced merger activity', col.names=c('Year', 'Prop.', 'Hospitals', 'Prop.', 'Hospitals'), align='lcccc', format='latex', booktabs=TRUE) %>%
+    add_header_above(header=c('', 'New York'=2, 'Other states'=2)) %>%
+    kable_styling(latex_options=c('hold_position', 'striped'))
 ```
 
 
-# B. Market-level Merger Trends & Statistics
+# Market-level trends
 
-## 1. Mergers
-```{r market merger}
-temp <- aha %>%
-    # Indicator for whether market experienced merger
-    group_by(aha_year, ny, fstcd, mcntycd) %>%
-        summarise(merger=case_when(sum(merge)>0 ~ 1, TRUE ~ 0)) %>%
-        ungroup() %>%
-    # Number of markets that experienced merger per state
-    group_by(aha_year, ny, fstcd) %>%
-        summarise(merges=sum(merger)) %>%
-        ungroup() %>%
-    # Average num. of markets that exp. merger in NY vs. all other states
-    group_by(aha_year, ny) %>%
-        summarise(avg=mean(merges), sd=sd(merges)) %>%
-        ungroup() %>%
-    mutate(hi=avg+sd, low=ifelse(avg-sd<0,0,avg-sd))
-
-ggplot(temp, aes(aha_year, avg, col=factor(ny))) +
-    geom_line() +
-    scale_color_manual(name='', values=c('0'='lightcyan4', '1'='dodgerblue4'), labels=c('0'='Other states', '1'='New York'), breaks=c('1', '0')) +
-    scale_x_continuous(breaks=seq(2000,2012,2)) +
-    labs(x='Year', y='Number of markets', title='Avg. number of markets that experienced a merger')
-
-temp %>%
-    mutate(state=ifelse(ny==1, 'New York', 'Other states')) %>%
-    select(aha_year, state, avg, sd) %>%
-    spread(state, avg) %>%
-    group_by(aha_year) %>%
-        summarise_all(sum, na.rm=TRUE) %>%
-        ungroup() %>%
-    mutate(`Other states`=paste0(`Other states`, ' (', round(sd, 1), ')')) %>%
-    select(aha_year, `New York`, `Other states`) %>%
-    kable(digits=1, align='crr', col.names=c('Year', 'New York', 'Other states'), caption='Average number of markets that experienced a merger') %>%
-    kable_styling(latex_options='hold_position')
-
-# Average number of mergers/market
-metrics$mkt_mergers <- aha %>%
-    filter(time==1) %>%
-    # Identify if market experienced merger activity
-    group_by(State, mcntycd) %>%
-        summarise(merger_activity=max(merger)) %>%
-        ungroup() %>%
-    # Average number of mergers/market
-    group_by(State) %>%
-        summarise(mu=mean(merger_activity), sd=sd(merger_activity)) %>%
-        ungroup() %>%
-    arrange(State) %>%
-    mutate(Metric='Mergers/Market', val=paste0(round(mu,2), ' (', round(sd,2),')')) %>%
-    select(Metric, State, val) %>%
-    spread(State, val)
+```{r, include=FALSE}
+temp <- tables %>%
+    filter(table=='B') %>%
+    mutate(val=paste0(round(mean,2), ' (', round(sd,2), ')'),
+        State=ifelse(ny==1,'New York','Other states'),
+        metric=paste0(metric, ' ', type)) %>%
+    select(State, metric, val) %>%
+    spread(State, val) %>%
+    mutate(metric=trimws(Hmisc::capitalize(metric))) %>%
+    mutate(metric=case_when(grepl('fpro$', metric)~'Ownership: For-profit',
+        grepl('npro', metric)~'Ownership: Non-profit',
+        grepl('govf', metric)~'Ownership: Gov., federal',
+        grepl('govn', metric)~'Ownership: Gov., non-federal',
+        TRUE~metric)) %>%
+    mutate(metric=factor(metric, levels=c('Mergers', 'Closures', 'Openings', 'Hospitals', 'Beds', 'Teaching Hospitals', 'Ownership: For-profit', 'Ownership: Non-profit', 'Ownership: Gov., federal', 'Ownership: Gov., non-federal'), ordered=TRUE)) %>%
+    arrange(metric)
 ```
 
-## 2. Closures
-```{r market closure}
-temp <- aha %>%
-    # Indicator for hospital closure
-    mutate(closure=case_when(del_reason_cat=='Closed' ~ 1, TRUE ~ 0)) %>%
-    # Indicator for whether market experienced any closures
-    group_by(aha_year, ny, fstcd, hrrnum_new) %>%
-        summarise(closure=case_when(sum(closure)>0 ~ 1, TRUE ~ 0)) %>%
-        ungroup() %>%
-    # Number of markets that experienced closures per state
-    group_by(aha_year, ny, fstcd) %>%
-        summarise(closures=sum(closure)) %>%
-        ungroup() %>%
-    # Avg. num. of markets that experienced closure (NY vs. rest)
-    group_by(aha_year, ny) %>%
-        summarise(avg=mean(closures), sd=sd(closures)) %>%
-        ungroup() %>%
-    mutate(hi=avg+sd, low=ifelse(avg-sd<0,0,avg-sd))
-
-# ggplot(temp, aes(aha_year, avg, fill=factor(ny))) +
-#     geom_bar(stat='identity', color='black', alpha=0.8, width=0.7, position=position_dodge()) +
-#     scale_fill_manual(name='', values=c('0'='lightcyan4', '1'='dodgerblue4'), labels=c('0'='Other states', '1'='New York'), breaks=c('1', '0')) +
-#     scale_x_continuous(breaks=seq(2000,2012,2)) +
-#     labs(x='Year', y='Number of markets', title='Avg. number of markets that experienced a closure')
-
-ggplot(temp, aes(aha_year, avg, col=factor(ny))) +
-    geom_line() +
-    scale_color_manual(name='', values=c('0'='lightcyan4', '1'='dodgerblue4'), labels=c('0'='Other states', '1'='New York'), breaks=c('1', '0')) +
-    scale_x_continuous(breaks=seq(2000,2012,2)) +
-    labs(x='Year', y='Markets', title='Avg. number of markets that experienced a closure')
-
+```{r, include=TRUE}
 temp %>%
-    select(aha_year, ny, avg, sd) %>%
-    spread(ny, avg) %>%
-    group_by(aha_year) %>%
-        summarise_all(sum, na.rm=TRUE) %>%
-        ungroup() %>%
-    mutate(`0`=paste0(`0`, ' (', round(sd, 1), ')')) %>%
-    select(aha_year, `1`, `0`) %>%
-    kable(digits=1, align='crr', col.names=c('Year', 'New York', 'Other states'), caption='Average number of markets that experienced a closure') %>%
-    kable_styling(latex_options='hold_position')
-
-# Average number of hospital closures/market
-metrics$mkt_closures <-  aha %>%
-    filter(time==1) %>%
-    # Indicator for closure
-    mutate(closure=ifelse(del_reason_cat=='Closed', 1, 0)) %>%
-    # Average over markets
-    group_by(State, mcntycd) %>%
-        summarise(mu=mean(closure), sd=sd(closure)) %>%
-        ungroup() %>%
-    $=
-
-```
-
-## 3. Openings
-```{r market opening}
-temp <- aha %>%
-    # Indicator for hospital opening
-    mutate(opening=case_when(add_reason_cat=='Newly added, New Hospital ID' ~ 1, TRUE ~ 0)) %>%
-    # Indicator for market with opening
-    group_by(aha_year, ny, fstcd, hrrnum_new) %>%
-        summarise(opening=case_when(sum(opening)>0 ~ 1, TRUE ~ 0)) %>%
-        ungroup() %>%
-    # Number of markets with opening per state
-    group_by(aha_year, ny, fstcd) %>%
-        summarise(openings=sum(opening)) %>%
-        ungroup() %>%
-    # Avg. num. of markets with opening (NY vs. rest)
-    group_by(aha_year, ny) %>%
-        summarise(avg=mean(openings), sd=sd(openings)) %>%
-        ungroup() %>%
-    mutate(hi=avg+sd, low=ifelse(avg-sd<0,0,avg-sd))
-
-# ggplot(temp, aes(aha_year, avg, fill=factor(ny))) +
-#     geom_bar(stat='identity', color='black', alpha=0.8, width=0.7, position=position_dodge()) +
-#     scale_fill_manual(name='', values=c('0'='lightcyan4', '1'='dodgerblue4'), labels=c('0'='Other states', '1'='New York'), breaks=c('1', '0')) +
-#     scale_x_continuous(breaks=seq(2000,2012,2)) +
-#     labs(x='Year', y='Markets', title='Avg. number of markets that experienced a opening')
-
-ggplot(temp, aes(aha_year, avg, col=factor(ny))) +
-    geom_line() +
-    scale_color_manual(name='', values=c('0'='lightcyan4', '1'='dodgerblue4'), labels=c('0'='Other states', '1'='New York'), breaks=c('1', '0')) +
-    scale_x_continuous(breaks=seq(2000,2012,2)) +
-    labs(x='Year', y='Markets', title='Avg. number of markets that experienced a opening')
-
-temp %>%
-    select(aha_year, ny, avg, sd) %>%
-    spread(ny, avg) %>%
-    group_by(aha_year) %>%
-        summarise_all(sum, na.rm=TRUE) %>%
-        ungroup() %>%
-    mutate(`0`=paste0(`0`, ' (', round(sd, 1), ')')) %>%
-    select(aha_year, `1`, `0`) %>%
-    kable(digits=1, align='crr', col.names=c('Year', 'New York', 'Other states'), caption='Average number of markets that experienced an opening') %>%
-    kable_styling(latex_options='hold_position')
-```
-
-## 4. Hospitals
-```{r market hospitals}
-temp <- aha %>%
-    # Hospitals per market
-    group_by(aha_year, ny, fstcd, hrrnum_new) %>%
-        summarise(hosps=n()) %>%
-        ungroup() %>%
-    # Avg. hospital per market (NY vs. rest)
-    group_by(aha_year, ny) %>%
-        summarise(avg=mean(hosps), sd=sd(hosps)) %>%
-        ungroup() %>%
-    mutate(hi=avg+sd, low=ifelse(avg-sd<0, 0, avg-sd))
-
-ggplot(temp, aes(aha_year, avg, col=factor(ny))) +
-    geom_line() +
-    scale_color_manual(name='', values=c('0'='lightcyan4', '1'='dodgerblue4'), labels=c('0'='Other states', '1'='New York'), breaks=c('1', '0')) +
-    scale_x_continuous(breaks=seq(2000,2012,2)) +
-    scale_y_continuous(limits=c(13,16)) +
-    labs(x='Year', y='Hospitals', title='Avg. number of hospitals per market')
-
-temp %>%
-    mutate(avg=paste0(round(avg,1), ' (', round(sd,1), ')')) %>%
-    select(aha_year, ny, avg) %>%
-    spread(ny, avg) %>%
-    select(aha_year, `1`, `0`) %>%
-    kable(digits=1, align='crr', col.names=c('Year', 'New York', 'Other states'), caption='Average number of hospitals per market') %>%
-    kable_styling(latex_options='hold_position')
-```
-
-## 5. Beds
-```{r market beds}
-temp <- aha %>%
-    # Total number of beds across hospitals per market
-    group_by(aha_year, ny, fstcd, hrrnum_new) %>%
-        summarise(beds.avg=sum(hospbd)) %>%
-        ungroup() %>%
-    # Average of total beds per market (NY vs rest)
-    group_by(aha_year, ny) %>%
-        summarise(avg=mean(beds.avg), sd=sd(beds.avg)) %>%
-        ungroup() %>%
-    mutate(hi=avg+sd, low=ifelse(avg-sd<0, 0, avg-sd))
-
-# ggplot(temp, aes(aha_year, avg, fill=factor(ny))) +
-#     geom_bar(stat='identity', color='black', alpha=0.8, width=0.7, position=position_dodge()) +
-#     scale_fill_manual(name='', values=c('0'='lightcyan4', '1'='dodgerblue4'), labels=c('0'='Other states', '1'='New York'), breaks=c('1', '0')) +
-#     scale_x_continuous(breaks=seq(2000,2012,2)) +
-#     labs(x='Year', y='Beds', title='Avg. number of beds (across hospitals) per market')
-
-ggplot(temp, aes(aha_year, avg, col=factor(ny))) +
-    geom_line() +
-    scale_color_manual(name='', values=c('0'='lightcyan4', '1'='dodgerblue4'), labels=c('0'='Other states', '1'='New York'), breaks=c('1', '0')) +
-    scale_x_continuous(breaks=seq(2000,2012,2)) +
-    labs(x='Year', y='Hospitals', title='Avg. number of beds (across hospitals) per market')
-
-temp %>%
-    mutate(avg=paste0(round(avg,1), ' (', round(sd,1), ')')) %>%
-    select(aha_year, ny, avg) %>%
-    spread(ny, avg) %>%
-    select(aha_year, `1`, `0`) %>%
-    kable(digits=1, align='crr', col.names=c('Year', 'New York', 'Other states'), caption='Average number of beds per market') %>%
-    kable_styling(latex_options='hold_position')
-```
-
-## 6. Teaching hospitals
-```{r market teach}
-```
-
-## 7. Hospital ownership
-```{r market ownership}
-temp <- aha %>%
-    # Categorize ownership types
-    mutate(
-        gov.non=case_when(cntrl %in% 12:16 ~ 1, TRUE ~ 0),
-        non.profit=case_when(cntrl %in% 21:23 ~ 1, TRUE ~ 0),
-        for.profit=case_when(cntrl %in% 31:33 ~ 1, TRUE ~ 0),
-        gov.fed=case_when(cntrl %in% 41:48 ~ 1, TRUE ~ 0)) %>%
-    # Sum across markets
-    group_by(aha_year, ny, fstcd, hrrnum_new) %>%
-        summarise(gov.non=sum(gov.non), gov.fed=sum(gov.fed), non.profit=sum(non.profit), for.profit=sum(for.profit)) %>%
-        ungroup() %>%
-    # Average ownership per market (NY vs rest)
-    group_by(aha_year, ny) %>%
-        summarise(
-            gov.non.avg=mean(gov.non), gov.non.sd=sd(gov.non),
-            non.profit.avg=mean(non.profit), non.profit.sd=sd(non.profit),
-            for.profit.avg=mean(for.profit), for.profit.sd=sd(for.profit),
-            gov.fed.avg=mean(gov.fed), gov.fed.sd=sd(gov.fed)) %>%
-        ungroup()
-
-temp %>% select(aha_year, ny, gov.non.avg, gov.fed.avg, non.profit.avg, for.profit.avg) %>%
-    gather(own, avg, gov.non.avg, gov.fed.avg, non.profit.avg, for.profit.avg) %>%
-ggplot(aes(aha_year, avg, col=factor(ny), linetype=own)) +
-    geom_line() +
-    scale_color_manual(name='', values=c('0'='lightcyan4', '1'='dodgerblue4'), labels=c('0'='Other states', '1'='New York'), breaks=c('1', '0')) +
-    scale_linetype_manual('Ownership',
-        values=c('gov.non.avg'=4, 'gov.fed.avg'=3, 'for.profit.avg'=2, 'non.profit.avg'=1),
-        labels=c('gov.non.avg'='Gov., Nonfederal', 'gov.fed.avg'='Gov., federal', 'for.profit.avg'='For-profit', 'non.profit.avg'='Non-profit'),
-        breaks=rev(c('gov.non.avg', 'gov.fed.avg', 'for.profit.avg', 'non.profit.avg'))) +
-    scale_x_continuous(breaks=seq(2000,2012,2)) +
-    labs(x='Year', y='Hospitals', title='Average number of hospitals by ownership type per market')
-
-
-temp %>%
-    mutate(
-        fed=paste0(round(gov.fed.avg,1), ' (', round(gov.fed.sd,1), ')'),
-        nfed=paste0(round(gov.non.avg,1), ' (', round(gov.non.sd,1), ')'),
-        non=paste0(round(non.profit.avg,1), ' (', round(non.profit.sd,1), ')'),
-        pro=paste0(round(for.profit.avg,1), ' (', round(for.profit.sd,1), ')')) %>%
-    unite(fednfednonpro, fed, nfed, non, pro, sep='-') %>%
-    select(aha_year, ny, fednfednonpro) %>%
-    spread(ny, fednfednonpro) %>%
-    separate(`1`, c('fed1', 'nfed1', 'non1', 'pro1'), sep='-') %>%
-    separate(`0`, c('fed0', 'nfed0', 'non0', 'pro0'), sep='-') %>%
-    select(aha_year, non1, non0, pro1, pro0, fed1, fed0, nfed1, nfed0) %>%
-    kable(align='crrrrrrrr', col.names=c('Year', 'NY', 'Other states', 'NY', 'Other states', 'NY', 'Other states', 'NY', 'Other states'), caption='Average number of hospital per market by ownership type') %>%
-        add_header_above(c(' ', 'Non-profit'=2, 'For-profit'=2, 'Gov., federal'=2, 'Gov., Non-federal'=2)) %>%
-    kable_styling(latex_options='hold_position')
-```
-
-## 8. Discharges
-```{r market discharges}
-temp <- aha %>%
-    # Total discharges per market
-    group_by(aha_year, ny, fstcd, hrrnum_new) %>%
-        summarise(mcrdc=sum(mcrdc), mcddc=sum(mcddc)) %>%
-        ungroup() %>%
-    # Average discharges per market (NY vs. Rest)
-    group_by(aha_year, ny) %>%
-        summarise(
-            avg.mcrdc=mean(mcrdc), sd.mcrdc=sd(mcrdc),
-            avg.mcddc=mean(mcddc), sd.mcddc=sd(mcddc)) %>%
-        ungroup() %>%
-    mutate(
-        hi.mcrdc=avg.mcrdc+sd.mcrdc, low.mcrdc=ifelse(avg.mcrdc-sd.mcrdc<0,0,avg.mcrdc-sd.mcrdc),
-        hi.mcddc=avg.mcddc+sd.mcddc, low.mcddc=ifelse(avg.mcddc-sd.mcddc<0,0,avg.mcddc-sd.mcddc)) %>%
-    mutate_at(.vars=vars(avg.mcrdc, hi.mcrdc, low.mcrdc, avg.mcddc, hi.mcddc, low.mcddc), .funs=funs(./1000))
-
-# ggplot(temp, aes(aha_year, avg.mcrdc, fill=factor(ny))) +
-#     geom_bar(stat='identity', color='black', alpha=0.8, width=0.7, position=position_dodge()) +
-#     scale_fill_manual(name='', values=c('0'='lightcyan4', '1'='dodgerblue4'), labels=c('0'='Other states', '1'='New York'), breaks=c('1', '0')) +
-#     scale_x_continuous(breaks=seq(2000,2012,2)) +
-#     labs(x='Year', y='Discharges (thousands)', title='Avg. number of discharges (Medicaid) per market')
-
-# ggplot(temp, aes(aha_year, avg.mcddc, fill=factor(ny))) +
-#     geom_bar(stat='identity', color='black', alpha=0.8, width=0.7, position=position_dodge()) +
-#     scale_fill_manual(name='', values=c('0'='lightcyan4', '1'='dodgerblue4'), labels=c('0'='Other states', '1'='New York'), breaks=c('1', '0')) +
-#     scale_x_continuous(breaks=seq(2000,2012,2)) +
-#     labs(x='Year', y='Discharges (thousands)', title='Avg. number of discharges (Medicare) per market')
-
-temp %>%
-    select(aha_year, ny, avg.mcrdc, avg.mcddc) %>%
-    gather(discharge, avg, avg.mcrdc, avg.mcddc) %>%
-ggplot(aes(aha_year, avg, col=factor(ny), linetype=discharge)) +
-    geom_line() +
-    scale_color_manual(name='', values=c('0'='lightcyan4', '1'='dodgerblue4'), labels=c('0'='Other states', '1'='New York'), breaks=c('1', '0')) +
-    scale_linetype_manual('', values=c('avg.mcrdc'=1, 'avg.mcddc'=2), labels=c('avg.mcrdc'='Medicare', 'avg.mcddc'='Medicaid'), breaks=c('avg.mcrdc', 'avg.mcddc')) +
-    scale_x_continuous(breaks=seq(2000,2012,2)) +
-    labs(x='Year', y='Discharges (thousands)', title='Average number of discharges per market')
-
-temp %>%
-    mutate(mc=paste0(round(avg.mcrdc,1), ' (', round(sd.mcrdc/1000,1), ')'),
-        md=paste0(round(avg.mcddc,1), ' (', round(sd.mcddc/1000,1), ')')) %>%
-    unite(mcmd, mc, md, sep='-') %>%
-    select(aha_year, ny, mcmd) %>%
-    spread(ny, mcmd) %>%
-    separate(`1`, c('mc1', 'md1'), sep='-') %>%
-    separate(`0`, c('mc0', 'md0'), sep='-') %>%
-    select(aha_year, mc1, mc0, md1, md0) %>%
-    kable(align='crrrr', col.names=c('Year', 'NY', 'Other states', 'NY', 'Other states'), caption='Average number of discharges per market') %>%
-        add_header_above(c(' ', 'Medicare'=2, 'Medicaid'=2)) %>%
-    kable_styling(latex_options='hold_position')
+    kable(caption='Market-level averages', col.names=c('', 'New York', 'Other states'), align='lcc', format='latex', booktabs=TRUE) %>%
+    kable_styling(latex_options=c('hold_position', 'striped'))
 ```
