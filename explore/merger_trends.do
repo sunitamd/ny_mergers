@@ -78,7 +78,6 @@ collapse (max) merger, by(ny id) fast
 collapse (mean) mean=merger (sd) sd=merger, by(ny) fast
 
 merge 1:1 ny using `total_hospitals', nogen
-gen share = hosp_merger / total_hospitals
 
 tempfile a1
 save `a1', replace
