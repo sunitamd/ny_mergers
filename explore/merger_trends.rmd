@@ -37,14 +37,30 @@ temp <- aha %>%
     pull(fstcd) %>%
     unique()
 aha[is.na(aha$fstcd) & aha$stcd==14, 'fstcd'] <- temp
+# Some modified FIPS county codes also missing
+temp <- aha %>%
+    filter(!is.na(mcntycd), fcounty==9003, fcntycd==3) %>%
+    pull(mcntycd) %>%
+    unique()
+aha[is.na(aha$mcntycd) & aha$fcounty==9003 & aha$fcntycd==3, 'mcntycd'] <- temp
 
 # Fix merge_type & merge variables
 aha <- aha %>%
-    rename(merge_type=merge) %>%
-    mutate(merge=case_when(!is.na(merge_type) ~ 1, TRUE ~ 0))
+    mutate(merger=case_when(!is.na(merge) ~ 1, TRUE ~ 0))
 
 # Create NY state indicator
-aha <- mutate(aha, ny=case_when(fstcd==36 ~ 1, TRUE ~ 0))
+aha <- aha %>%
+    mutate(ny=case_when(fstcd==36 ~ 1, TRUE ~ 0)) %>%
+    mutate(State=case_when(ny==1~'New York', ny==0~'Other states'))
+# Create indicator for analysis timeframe
+aha <- mutate(aha, time=ifelse(aha_year>=2006 & aha_year<=2012, 1, 0))
+
+# Analysis settings
+# Market definition
+mkt_var <- "mcntycd" # county-level (modified FIPS county code)
+
+# Store aggregated tables
+metrics <- list()
 ```
 
 # A. Hospital-level Merger Trends
@@ -53,14 +69,25 @@ aha <- mutate(aha, ny=case_when(fstcd==36 ~ 1, TRUE ~ 0))
 # share of hospitals involved in merger by year in NY vs other states
 temp <- aha %>%
     group_by(aha_year, ny) %>%
-    summarise(merge_share=mean(sum(merge)/n())) %>%
-    ungroup()
+        summarise(merge_share=mean(sum(merger)/n())) %>%
+        ungroup()
 
 ggplot(temp, aes(aha_year, merge_share, col=factor(ny))) +
     geom_line() +
     scale_color_manual(name='', values=c('0'='lightcyan4', '1'='dodgerblue4'), labels=c('0'='Other states (avg.)', '1'='New York'), breaks=c('1', '0')) +
     scale_x_continuous(breaks=seq(2000,2012,2)) +
     labs(x='Year', y='Proportion', title='Share of hospitals that experienced mergers')
+
+# Share of hospitals that experienced mergers
+metrics$share_hosp_mergers <- aha %>%
+    filter(time==1)  %>%
+    group_by(State) %>%
+        mutate(total_hospitals=length(unique(id))) %>%
+        summarise(Proportion=mean(sum(merger)/total_hospitals)) %>%
+        ungroup() %>%
+    arrange(State) %>%
+    mutate(Metric='Share of hosps. experienced merger') %>%
+    spread(State, Proportion)
 ```
 
 
@@ -70,7 +97,7 @@ ggplot(temp, aes(aha_year, merge_share, col=factor(ny))) +
 ```{r market merger}
 temp <- aha %>%
     # Indicator for whether market experienced merger
-    group_by(aha_year, ny, fstcd, hrrnum_new) %>%
+    group_by(aha_year, ny, fstcd, mcntycd) %>%
         summarise(merger=case_when(sum(merge)>0 ~ 1, TRUE ~ 0)) %>%
         ungroup() %>%
     # Number of markets that experienced merger per state
@@ -82,12 +109,6 @@ temp <- aha %>%
         summarise(avg=mean(merges), sd=sd(merges)) %>%
         ungroup() %>%
     mutate(hi=avg+sd, low=ifelse(avg-sd<0,0,avg-sd))
-
-# ggplot(temp, aes(aha_year, avg, fill=factor(ny))) +
-#     geom_bar(stat='identity', color='black', alpha=0.8, width=0.7, position=position_dodge()) +
-#     scale_fill_manual(name='', values=c('0'='lightcyan4', '1'='dodgerblue4'), labels=c('0'='Other states', '1'='New York'), breaks=c('1', '0')) +
-#     scale_x_continuous(breaks=seq(2000,2012,2)) +
-#     labs(x='Year', y='Number of markets', title='Avg. number of markets that experienced a merger')
 
 ggplot(temp, aes(aha_year, avg, col=factor(ny))) +
     geom_line() +
@@ -106,6 +127,22 @@ temp %>%
     select(aha_year, `New York`, `Other states`) %>%
     kable(digits=1, align='crr', col.names=c('Year', 'New York', 'Other states'), caption='Average number of markets that experienced a merger') %>%
     kable_styling(latex_options='hold_position')
+
+# Average number of mergers/market
+metrics$mkt_mergers <- aha %>%
+    filter(time==1) %>%
+    # Identify if market experienced merger activity
+    group_by(State, mcntycd) %>%
+        summarise(merger_activity=max(merger)) %>%
+        ungroup() %>%
+    # Average number of mergers/market
+    group_by(State) %>%
+        summarise(mu=mean(merger_activity), sd=sd(merger_activity)) %>%
+        ungroup() %>%
+    arrange(State) %>%
+    mutate(Metric='Mergers/Market', val=paste0(round(mu,2), ' (', round(sd,2),')')) %>%
+    select(Metric, State, val) %>%
+    spread(State, val)
 ```
 
 ## 2. Closures
@@ -149,6 +186,18 @@ temp %>%
     select(aha_year, `1`, `0`) %>%
     kable(digits=1, align='crr', col.names=c('Year', 'New York', 'Other states'), caption='Average number of markets that experienced a closure') %>%
     kable_styling(latex_options='hold_position')
+
+# Average number of hospital closures/market
+metrics$mkt_closures <-  aha %>%
+    filter(time==1) %>%
+    # Indicator for closure
+    mutate(closure=ifelse(del_reason_cat=='Closed', 1, 0)) %>%
+    # Average over markets
+    group_by(State, mcntycd) %>%
+        summarise(mu=mean(closure), sd=sd(closure)) %>%
+        ungroup() %>%
+    $=
+
 ```
 
 ## 3. Openings
