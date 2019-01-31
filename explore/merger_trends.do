@@ -43,26 +43,17 @@ tempfile master
 save `master', replace
 
 
-* Total number of hospitals by state
+* Total number of hospitals by state, year
 keep if time==1
-duplicates drop ny id, force
+duplicates drop ny aha_year id, force
 gen one = 1
-bys ny: egen total_hospitals = total(one)
-keep ny total_hospitals
+bys ny aha_year: egen total_hospitals = total(one)
+keep ny aha_year total_hospitals
 duplicates drop
 
 tempfile total_hospitals
 save `total_hospitals', replace
 
-* Total number of markets by state
-use `master', clear
-keep if time==1
-duplicates drop ny `mkt', force
-gen one = 1
-collapse (sum) total_mkts=one, by(ny) fast
-
-tempfile total_markets
-save `total_markets', replace
 
 *******************
 * Tables (New York State vs Other States)
@@ -73,11 +64,12 @@ use `master', clear
 keep if time==1
 
 * Hospital-level merger indicator
-collapse (max) merger, by(ny id) fast
-* Average & SD of hospitals w/ mergers by state
-collapse (mean) mean=merger (sd) sd=merger, by(ny) fast
+collapse (max) merger, by(ny aha_year id) fast
+* Sum mergers over years, state
+collapse (sum) mergers=merger, by(ny aha_year) fast
 
-merge 1:1 ny using `total_hospitals', nogen
+merge 1:1 ny aha_year using `total_hospitals', nogen
+gen proportion = mergers / total_hospitals
 
 tempfile a1
 save `a1', replace
@@ -209,10 +201,12 @@ save `b8', replace
 *******************
 * Output
 *******************
-* Append tables together
-clear
+* hospital-level merger proportions
+use `a1', clear
+gen table = "A"
 preserve
 
+* Append market-level tables together
 forvalues i=1/7 {
 	* skip until teaching variable added into AHA
 	if (`i'==6) {
@@ -221,5 +215,6 @@ forvalues i=1/7 {
 
 	append using `b`i''
 }
+replace table = "B" if table==""
 
 save "dump/merger_trends.dta", replace
