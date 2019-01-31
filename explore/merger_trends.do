@@ -222,4 +222,4 @@ forvalues i=1/7 {
 	append using `b`i''
 }
 
-save using "dump/merger_trends.dta", replace
+save "dump/merger_trends.dta", replace
