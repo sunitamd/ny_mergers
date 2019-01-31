@@ -39,7 +39,7 @@ forvalues i=2/10 {
     gen `newlag' = max(merger[_n-`i'], `oldlag') if id[_n-`i']==id
     replace `newlag' = `oldlag' if id[_n-`i']!=id
     replace `newlag' = 0 if `newlag'==.
-    
+
     label var `newlag' "AHA `i'-year lag merger indicator"
 }
 
@@ -93,7 +93,7 @@ save `cooper', replace
 
 *******
 ** Merge datasets
-merge 1:1 id year using `aha', force
+merge 1:1 id year using `aha'
 label define L_source 1 "Cooper" 2 "AHA" 3 "matched", add
 label values _merge L_source
 
