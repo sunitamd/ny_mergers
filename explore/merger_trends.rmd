@@ -24,9 +24,15 @@ library(kableExtra)
 
 theme_set(theme_bw())
 ```
+
 ```{r setup, include=FALSE}
 tables <- read_dta("dump/merger_trends.dta")
 ```
+
+Figures and tables represent data from the AHA:  
+
+    - years: 2006-2012  
+    - all hospitals  
 
 # Hospital-level trends
 
@@ -66,12 +72,12 @@ temp <- tables %>%
     select(State, metric, val) %>%
     spread(State, val) %>%
     mutate(metric=trimws(Hmisc::capitalize(metric))) %>%
-    mutate(metric=case_when(grepl('fpro$', metric)~'Ownership: For-profit',
-        grepl('npro', metric)~'Ownership: Non-profit',
-        grepl('govf', metric)~'Ownership: Gov., federal',
-        grepl('govn', metric)~'Ownership: Gov., non-federal',
+    mutate(metric=case_when(grepl('forprof$', metric)~'Ownership: For-profit',
+        grepl('nonprof$', metric)~'Ownership: Non-profit',
+        grepl('govfed$',metric)~'Ownership: Gov., federal',
+        grepl('govnfed$', metric)~'Ownership: Gov., non-federal',
         TRUE~metric)) %>%
-    mutate(metric=factor(metric, levels=c('Mergers', 'Closures', 'Openings', 'Hospitals', 'Beds', 'Teaching Hospitals', 'Ownership: For-profit', 'Ownership: Non-profit', 'Ownership: Gov., federal', 'Ownership: Gov., non-federal'), ordered=TRUE)) %>%
+    mutate(metric=factor(metric, levels=c('Mergers', 'Closures', 'Openings', 'Hospitals', 'Beds', 'Ownership: For-profit', 'Ownership: Non-profit', 'Ownership: Gov., federal', 'Ownership: Gov., non-federal'), ordered=TRUE)) %>%
     arrange(metric)
 ```
 
