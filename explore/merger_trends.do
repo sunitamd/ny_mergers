@@ -10,7 +10,7 @@ set more off
 * Set macros
 *******************
 local projdir = "/gpfs/data/desailab/home/ny_mergers"
-local mkt "fips"
+local mkt "fcounty"
 local mkt_label "County"
 
 
@@ -26,8 +26,6 @@ use "`projdir'/data_hosp/aha_combined_final_v2.dta", clear
 		levelsof mcntycd if fcounty==9003 & fcntycd==3, local(temp)
 		replace mcntycd = `temp' if fcounty==9003 & fcntycd
 
-	* Generate true unique FIPS county codes
-		gen fips = string(fstcd, "%02.0f") + string(fcntycd, "%03.0f")
 	* Hospital-year merger indicator
 		gen merger = cond(merge!=., 1, 0, 0)
 	* NY state indicator
@@ -54,9 +52,22 @@ tempfile total_hospitals
 save `total_hospitals', replace
 
 
+* Total number of markets per state
+use `master', clear
+	gen one = 1
+	duplicates drop ny `mkt' aha_year, force
+	collapse (sum) mkts=one, by(ny aha_year) fast
+	collapse (mean) mean=mkts (sd) sd=mkts, by(ny) fast
+
+tempfile total_mkts
+save `total_mkts', replace
+
+
 *******************
 * Tables (New York State vs Other States)
 *******************
+
+** HOSPITAL-LEVEL STATISTICS
 
 ** A1. Mergers per hospital
 use `master', clear
@@ -73,17 +84,27 @@ tempfile a1
 save `a1', replace
 
 
-** B1. Mergers per market
+** MARKET-YEAR LEVEL STATISTICS
+
+** B1. Number of hospitals involved in a merger
 use `master', clear
 
-	* Market-level merger indicator
-		collapse (max) merger, by(ny `mkt') fast
-	* Average & SD of market mergers by state
-		collapse (mean) mean=merger (sd) sd=merger, by(ny) fast
-		gen metric = "mergers"
+	* sum hospitals with merger activity in each market-year
+		collapse (max) mkt_year_merger=merger, by(ny `mkt' aha_year) fast
+	* Sum number of hospitals
+		collapse (sum) mkt_year_merger, by(ny) fast
+		gen metric = "Number of hospitals with merger activity"
 
 tempfile b1
 save `b1', replace
+
+
+** B2. Proportion of market-years with a hospital involved in a merger
+use `master', clear
+
+	* Market-year level merger indicator
+		collapse (max) mkt_year_merger=merger, by(ny `mkt' aha_year) fast
+	*
 
 
 ** B2. Closures per market
