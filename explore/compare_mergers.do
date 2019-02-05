@@ -1,14 +1,18 @@
 * Purpose: Compare mergers between combined AHA data to Cooper merger dataset. Comparing only General/Acute care hospitals in NY State 2006-2012.
 
+
+********************************************
 clear
 set more off
 
 
-*******
+********************************************
 ** AHA Combined Data
+********************************************
 use "/gpfs/data/desailab/home/ny_mergers/data_hosp/aha_combined_final_v2.dta", clear
 
 tostring sysid, replace
+label var sysid "AHA sysid"
 
 replace merge = 0 if merge==.
 label define merge 0 "0 No merger", modify
@@ -16,7 +20,8 @@ label define merge 0 "0 No merger", modify
 rename aha_year year
 
 * (id, year) does not uniquely identify observations. Duplicates only differ in add_reason, drop arbitrarily for now (none are in NY)
-duplicates drop id year, force
+duplicates tag id year, gen(dup)
+drop if dup>0 & add_reason!="Status Changed To Registered"
 
 * Create indicator for hospital merger
 gen merger = 1 if inlist(merge, 1, 2, 3)
@@ -76,9 +81,31 @@ tempfile aha
 save `aha', replace
 
 
-*******
+** Reduce to a hospital-level dataset
+bysort id: egen hosp_merger = total(merger)
+by id: egen year_min = min(year)
+by id: egen year_max = max(year)
+levelsof id, local(ids) clean
+gen sysids = ""
+foreach id of local ids {
+    levelsof sysid, local(sysids) clean
+    replace sysids = "`sysids'" if id=="`id'"
+}
+duplicates drop id sysids hosp_merger year_min year_max, force
+isid id
+
+tempfile aha_hospital
+save `aha_hospital', replace
+
+
+
+********************************************
 ** Cooper Hospital Mergers Data
+********************************************
 use "/gpfs/data/desailab/home/ny_mergers/data_hosp/HC_ext_mergerdata_public.dta", clear
+
+rename sysid sysid2
+label var sysid2 "Cooper sysid"
 
 * Create merger indicators
 gen merger2 = 1 if target==1 | acquirer==1
@@ -91,10 +118,27 @@ tempfile cooper
 save `cooper', replace
 
 
-*******
+** Reduce to a hospital-level dataset
+bysort id: egen hosp_merger2 = total(merger2)
+by id: egen year_min2 = min(year)
+by id: egen year_max2 = max(year)
+levelsof id, local(ids) clean
+gen sysids2 = ""
+foreach id of local ids {
+    levelsof sysid2, local(sysids) clean
+    replace sysids2 = "`sysids'" if id=="`id'"
+}
+duplicates drop id sysids2 hosp_merger2 year_min2 year_max2, force
+isid id
+
+tempfile cooper_hospital
+save `cooper_hospital', replace
+
+
+********************************************
 ** Merge datasets
 merge 1:1 id year using `aha'
-label define L_source 1 "Cooper" 2 "AHA" 3 "matched", add
+label define L_source 1 "Cooper (master)" 2 "AHA (using)" 3 "matched", add
 label values _merge L_source
 
 tempfile merged
@@ -134,7 +178,7 @@ label define L_match 1 "In AHA & Cooper" 2 "In Cooper only" 3 "In AHA only", mod
 label values match L_match
 
 qui count if match==1
-local merger_matches = `r(n)'
+local merger_matches = `r(N)'
 qui sum merger
 local mergers_aha = `r(sum)'
 qui sum merger2
@@ -160,3 +204,12 @@ foreach i in 1 2 5 10 {
 }
 
 save "/gpfs/data/desailab/home/ny_mergers/data_hosp/aha_cooper_ny_2006_2012.dta", replace
+* Allow group read/write permissions
+!chmod g+rw "/gpfs/data/desailab/home/ny_mergers/data_hosp/aha_cooper_ny_2006_2012.dta"
+
+
+** Merge hospital level data
+use `cooper_hospital', clear
+
+merge 1:1 id using `aha_hospital'
+label values _merge L_source
