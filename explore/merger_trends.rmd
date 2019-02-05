@@ -29,28 +29,26 @@ theme_set(theme_bw())
 tables <- read_dta("dump/merger_trends.dta")
 ```
 
-Figures and tables represent data from the AHA:  
+- All tables and figures represent General, acute care hospitals from the AHA (2006-2012)
 
-    - years: 2006-2012  
-    - all hospitals  
 
 # Hospital-level trends
 
 ```{r, include=TRUE}
-tables %>% filter(table=='A') %>%
-ggplot(aes(aha_year, proportion, linetype=factor(ny))) +
+tables %>% filter(tbl=='hosp_merger_share') %>%
+ggplot(aes(aha_year, value, linetype=factor(ny))) +
     geom_line() +
     scale_linetype_manual('', breaks=c('1', '0'), labels=c('1'='New York', '0'='Other states'), values=c('1'=1, '0'=2)) +
     scale_x_continuous(breaks=seq(2006,2012,2)) +
-    labs(x='Year', y='Proportion', title='Share of hospitals that experienced merger activity')
+    labs(x='', y='', title='Prop. of hospitals that experienced merger activity')
 ```
 
 ```{r, include=TRUE}
 tables %>%
-    filter(table=='A') %>%
+    filter(tbl=='hosp_merger_share') %>%
     mutate(State=ifelse(ny==1,'New York','Other states')) %>%
-    select(aha_year, State, proportion, total_hospitals) %>%
-    unite(val, proportion, total_hospitals, sep='-') %>%
+    select(aha_year, State, value, hospitals) %>%
+    unite(val, value, hospitals, sep='-') %>%
     spread(State, val) %>%
     separate(`New York`, c('nshare', 'nhosps'), sep='-') %>%
     separate(`Other states`, c('oshare', 'ohosps'), sep='-') %>%
@@ -63,26 +61,65 @@ tables %>%
 
 # Market-level trends
 
+- Markets defined as US Counties  
+
 ```{r, include=FALSE}
-temp <- tables %>%
-    filter(table=='B') %>%
-    mutate(val=paste0(round(mean,2), ' (', round(sd,2), ')'),
+total_mkts <- tables %>%
+    filter(tbl=='total_mkts') %>%
+    group_by(ny) %>%
+        summarise(value=sum(value)) %>%
+        ungroup()
+total_mkts.ny1 <- filter(total_mkts, ny==1) %>% pull(value) %>% as.numeric()
+total_mkts.ny0 <- filter(total_mkts, ny==0) %>% pull(value) %>% as.numeric()
+
+temp_n <- tables %>%
+    filter(tbl %in% c('merger_n')) %>%
+    mutate(val=sprintf('%2.0f', value),
         State=ifelse(ny==1,'New York','Other states'),
-        metric=paste0(metric, ' ', type)) %>%
-    select(State, metric, val) %>%
-    spread(State, val) %>%
-    mutate(metric=trimws(Hmisc::capitalize(metric))) %>%
-    mutate(metric=case_when(grepl('forprof$', metric)~'Ownership: For-profit',
-        grepl('nonprof$', metric)~'Ownership: Non-profit',
-        grepl('govfed$',metric)~'Ownership: Gov., federal',
-        grepl('govnfed$', metric)~'Ownership: Gov., non-federal',
-        TRUE~metric)) %>%
-    mutate(metric=factor(metric, levels=c('Mergers', 'Closures', 'Openings', 'Hospitals', 'Beds', 'Ownership: For-profit', 'Ownership: Non-profit', 'Ownership: Gov., federal', 'Ownership: Gov., non-federal'), ordered=TRUE)) %>%
-    arrange(metric)
+        tbl=paste0(tbl,type)) %>%
+    select(State, tbl, val) %>%
+    spread(State, val)
+
+temp_meansd <- tables %>%
+    filter(tbl %in% c('hosp_n', 'beds_n', 'discharges')) %>%
+    mutate(val=paste0(sprintf('%2.2f', mean), ' (', sprintf('%2.2f', mean), ')'),
+        State=ifelse(ny==1,'New York','Other states'),
+        tbl=paste0(tbl,type)) %>%
+    select(State, tbl, val) %>%
+    spread(State, val)
+
+temp_pc <- tables %>%
+    filter(tbl %in% c('merger_pr', 'closure_pr', 'opening_pr', 'ownership_pr')) %>%
+    mutate(val=sprintf('%2.2f', value),
+        State=ifelse(ny==1,'New York','Other states'),
+        tbl=paste0(tbl,type)) %>%
+    select(State, tbl, val) %>%
+    spread(State, val)
+
+tbl_order <- c('merger_n', 'merger_pr', 'closure_pr', 'opening_pr', 'hosp_n', 'beds_n', 'ownership_prforprof', 'ownership_prnonprof', 'ownership_prgov', 'dischargesmedicaid', 'dischargesmedicare')
+
+temp <- bind_rows(temp_n,  temp_meansd, temp_pc) %>%
+    mutate(tbl=factor(tbl, levels=tbl_order, ordered=TRUE)) %>%
+    mutate(metric=case_when(
+        tbl=='merger_n' ~ 'Number of hosp. involved in merger',
+        tbl=='merger_pr' ~ 'Prop. of market-years w/ hosp. involved in merger',
+        tbl=='closure_pr' ~ 'Prop. of market-years experiencing a hosp. closure',
+        tbl=='opening_pr' ~ 'Prop. of market-years experiencing a hosp. opening',
+        tbl=='hosp_n' ~ 'Avg. number of hosp. per market',
+        tbl=='beds_n' ~ 'Avg. number of beds per market',
+        tbl=='ownership_prforprof' ~ 'Prop. of ownership: for-profit',
+        tbl=='ownership_prnonprof' ~ 'Prop. of ownership: non-profit',
+        tbl=='ownership_prgov' ~ 'Prop. of ownership: government',
+        tbl=='dischargesmedicaid' ~ 'Avg. discharges per market (medicaid)',
+        tbl=='dischargesmedicare' ~ 'Avg. discharges per market (medicare)')) %>%
+    arrange(tbl) %>%
+    select(metric, `New York`, `Other states`)
+
+temp_names <- c('', paste0('New York (n=', total_mkts.ny1, ')'), paste0('Other states (n=', total_mkts.ny0, ')')) 
 ```
 
 ```{r, include=TRUE}
 temp %>%
-    kable(caption='Market-level averages', col.names=c('', 'New York', 'Other states'), align='lcc', format='latex', booktabs=TRUE) %>%
+    kable(caption='Market-level averages', col.names=temp_names, align='lcc', format='latex', booktabs=TRUE) %>%
     kable_styling(latex_options=c('hold_position', 'striped'))
 ```
