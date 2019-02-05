@@ -1,22 +1,28 @@
-*******************
+********************************************
 * Exploratory analysis of market-level merger trends in New York state versus rest of country
-*******************
+********************************************
 
 clear
 set more off
 
 
-*******************
+********************************************
 * Set macros
-*******************
+********************************************
 local projdir = "/gpfs/data/desailab/home/ny_mergers"
 local mkt "fcounty"
 local mkt_label "County"
 
+* Create tempfiles for table outputs
+local table_list = "hosp_mergers merger_n merger_pr closure_pr opening_pr hosp_n beds_n ownership_pr discharges"
+foreach tbl of local table_list {
+	tempfile `tbl'
+}
 
-*******************
+
+********************************************
 * Data Prep
-*******************
+********************************************
 use "`projdir'/data_hosp/aha_combined_final_v2.dta", clear
 
 	* One fstcd is missing
@@ -44,98 +50,101 @@ save `master', replace
 use `master', clear
 	duplicates drop ny aha_year id, force
 	gen one = 1
-	bys ny aha_year: egen total_hospitals = total(one)
-	keep ny aha_year total_hospitals
+	bys ny aha_year: egen hospitals = total(one)
+	keep ny aha_year hospitals
 	duplicates drop
 
 tempfile total_hospitals
 save `total_hospitals', replace
 
 
-* Total number of markets per state
+* Total number of markets per state, year
 use `master', clear
 	gen one = 1
 	duplicates drop ny `mkt' aha_year, force
 	collapse (sum) mkts=one, by(ny aha_year) fast
-	collapse (mean) mean=mkts (sd) sd=mkts, by(ny) fast
 
 tempfile total_mkts
 save `total_mkts', replace
 
 
-*******************
+********************************************
 * Tables (New York State vs Other States)
-*******************
+********************************************
 
+********************************************
 ** HOSPITAL-LEVEL STATISTICS
 
-** A1. Mergers per hospital
+** Mergers per hospital
 use `master', clear
 
-	* Hospital-level merger indicator
+	* Hospital-year level merger indicator
 		collapse (max) merger, by(ny aha_year id) fast
-	* Sum mergers over years, state
+	* Sum hospitals experiencing a merger over over years
 		collapse (sum) mergers=merger, by(ny aha_year) fast
 
-	merge 1:1 ny aha_year using `total_hospitals', nogen
-	gen proportion = mergers / total_hospitals
+	merge 1:1 ny aha_year using `total_hospitals', nogen assert(3)
+	gen value = mergers / hospitals
+	gen metric = "Proportion of hosp involved in merger "
 
-tempfile a1
-save `a1', replace
+save `hosp_mergers', replace
 
 
+********************************************
 ** MARKET-YEAR LEVEL STATISTICS
 
-** B1. Number of hospitals involved in a merger
+** Number of hospitals involved in a merger
 use `master', clear
 
-	* sum hospitals with merger activity in each market-year
-		collapse (max) mkt_year_merger=merger, by(ny `mkt' aha_year) fast
-	* Sum number of hospitals
-		collapse (sum) mkt_year_merger, by(ny) fast
-		gen metric = "Number of hospitals with merger activity"
+	* indicate hospitals involved in merger
+		collapse (max) merger, by(ny `mkt' aha_year id)
+	* sum hospitals involved in merger over markets
+		collapse (sum) hosp_mergers=merger, by(ny `mkt' aha_year)
+	* average (sd) number of hospitals involved in merger per year
+		collapse (mean) mean=hosp_mergers (sd) sd=hosp_mergers, by(ny)
+		gen metric =  "Avg n of hosp involved in merger per year"
 
-tempfile b1
-save `b1', replace
+save `merger_n', replace
 
 
-** B2. Proportion of market-years with a hospital involved in a merger
+** Proportion of market-years with a hospital involved in a merger
+use `master', clear
+	
+	* indicate market-years with a hospital involved in a merger
+		collapse (max) merger, by(ny `mkt' aha_year)
+	* proportion of market-years with a hospital involved in a merger
+		collapse (mean) value=merger, by(ny)
+		gen metric = "Proportion of mkt-years w/ hosp involved in merger"
+
+save `merger_pr', replace
+
+
+** Proportion of market-years experiencing a hospital closure
 use `master', clear
 
-	* Market-year level merger indicator
-		collapse (max) mkt_year_merger=merger, by(ny `mkt' aha_year) fast
-	*
+	* indicate market-years experiencing a closure
+		gen closure = cond(del_reason_cat=="Closed", 1,0,0)
+		collapse (max) closure, by(ny `mkt' aha_year) fast
+		collapse (mean) value=closure, by(ny)
+		gen metric = "Proportion of mkt-years experiencing a closure"
+
+save `closure_pr', replace
 
 
-** B2. Closures per market
+** Proportion of market-years experiencing a hospital opening
 use `master', clear
 
-	* Market-level hospital closure
-		gen closure = cond(del_reason_cat=="Closed", 1, 0, 0)
-		collapse (max) closure, by(ny `mkt') fast
-	* Average & SD of markets w/ closures by state
-		collapse (mean) mean=closure (sd) sd=closure, by(ny) fast
-		gen metric = "closures"
+	* indicate market-years experiencing an opening
+		gen opening  = cond(add_reason_cat=="Newly added, New Hospital ID", 1,0,0)
+		collapse (max) opening, by(ny `mkt' aha_year) fast
+		collapse (mean) value=opening, by(ny)
+		gen metric = "Proportion of mkt-years experiencing an opening"
 
-tempfile b2
-save `b2', replace
+save `opening_pr', replace
 
 
-** B3. Openings per market
-use `master', clear
+** Number of hospitals
 
-	* Market-level openings
-		gen opening = cond(add_reason_cat=="Newly added, New Hospital ID", 1, 0, 0)
-		collapse (max) opening, by(ny `mkt') fast
-	* Average & SD
-		collapse (mean) mean=opening (sd) sd=opening, by(ny) fast
-		gen metric = "openings"
-
-tempfile b3
-save `b3', replace
-
-
-** B4. Hospitals per market
 use `master', clear
 
 	* Count hospitals per market
@@ -144,87 +153,69 @@ use `master', clear
 		collapse (count) hospitals=one, by(ny `mkt') fast
 	* Average & SD hopsitals/market by state
 		collapse (mean) mean=hospitals (sd) sd=hospitals, by(ny) fast
-		gen metric = "hospitals"
+		gen metric = "Avg num. hospitals per mkt"
 
-tempfile b4
-save `b4', replace
+save `hosp_n', replace
 
 
-** B5. Beds (across all hospitals) per market
+** Number of hospital beds
 use `master', clear
 
 	* Sum beds across hospitals
 		collapse (sum) hospbd, by(ny `mkt') fast
 	* Average & SD total beds/market by state
 		collapse (mean) mean=hospbd (sd) sd=hospbd, by(ny) fast
-		gen metric = "beds"
+		gen metric = "Avg num. of beds per mkt"
 
-tempfile b5
-save `b5', replace
-
-
-** B6. Teaching hospitals per market
-use `master', clear
-
-	* need to add teaching variable to AHA first
-		gen metric = "teaching hospitals"
-
-tempfile b6
-save `b6', replace
+save `beds_n', replace
 
 
-** B7. Hospital Ownership
+** Hospital ownership proportions
 use `master', clear
 
 	* Ownership type
-		gen own_govnfed = cond(cntrl>=12 & cntrl<=16, 1,0,0)
-		gen own_nonprof = cond(cntrl>=21 & cntrl<=23, 1,0,0)
-		gen own_forprof = cond(cntrl>=31 & cntrl<=33, 1,0,0)
-		gen own_govfed = cond(cntrl>=41 & cntrl<=48, 1,0,0)
+		gen type = "gov" if (cntrl>=12 & cntrl<=16) | (cntrl>=41 & cntrl<=48)
+		replace type = "nonprof" if cntrl>=21 & cntrl<=23
+		replace type = "forprof" if cntrl>=31 & cntrl<=33
+		assert type != ""
 	* Sum ownership types per market
-		collapse (sum) own_govnfed own_govfed own_nonprof own_forprof, by(ny `mkt') fast
-		reshape long own_, i(ny `mkt') j(type) string
+		gen one = 1
+		collapse (sum) n=one, by(ny `mkt' type) fast
 	* Average & SD ownership types/market by state
-		collapse (mean) mean=own_ (sd) sd=own_, by(ny type) fast
-		gen metric = "ownership type"
+		collapse (mean) mean=n (sd) sd=n, by(ny type) fast
+		gen metric = "Proportion ownership types per mkt"
 
-tempfile b7
-save `b7', replace
+save `ownership_pr', replace
 
 
-** B8. Discharges by type per market
+** Discharges by type per market
 use `master', clear
 
 	* Sum discharge types per market
 		collapse (sum) mcrdc mcddc, by(ny `mkt')
-		rename *dc dc*
-		reshape long dc , i(ny `mkt') j(type) string
+		rename *dc discharges*
+		reshape long discharges , i(ny `mkt') j(type) string
 		replace type = "medicaid" if type=="mcd"
 		replace type = "medicare" if type=="mcr"
 	* Average & SD discharges/market by state
-		collapse (mean) mean=dc (sd) sd=dc, by(ny type) fast
-		gen metric = "discharges"
+		collapse (mean) mean=discharges (sd) sd=discharges, by(ny type) fast
+		gen metric = "Avg discharges per mkt"
 
-tempfile b8
-save `b8', replace
+save `discharges', replace
 
 
-*******************
+********************************************
 * Output
-*******************
-* hospital-level merger proportions
-use `a1', clear
-	gen table = "A"
+********************************************
+clear
 
-* Append market-level tables together
-	forvalues i=1/7 {
-		* skip until teaching variable added into AHA
-		if (`i'==6) {
-			continue
-		}
-		append using `b`i''
-	}
-	replace table = "B" if table==""
+gen tbl = ""
+
+* Append all tables together for output to rmarkdown
+foreach tbl of local table_list {
+	append using ``tbl''
+	replace tbl = "`tbl'" if tbl==""
+}
 
 * Save
 save "dump/merger_trends.dta", replace
