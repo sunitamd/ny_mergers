@@ -21,8 +21,9 @@ theme_set(theme_bw())
 ############################################
 # NY Counties Shapefile
 ############################################
-# Shapefiles downloaded from: gis.ny.gov/civil-boundaries/ß
-ny <- read_sf("mapping/shapefiles/NYS_Civil_Boundaries_SHP/Counties_Shoreline.shp")
+# Shapefiles downloaded from: https://www.census.gov/geo/maps-data/data/cbf/cbf_counties.html
+us <- read_sf("mapping/shapefiles/cb_2017_us_county_20m/cb_2017_us_county_20m.shp")
+ny <- us %>% filter(STATEFP=="36")
 # Set CRS to mercator
 ny <- st_transform(ny, crs=3857)
 
@@ -41,14 +42,22 @@ if (Sys.info()[['sysname']] == 'Linux') {
 aha <- aha %>% filter(fstcd==36, serv==10)
 
 # Generate treatment/control/na groups
+# Treatment: merger in market-year and no merger in +/- 2 years
+# Control: no merger in market-year and no merger in +/- 2 years
+
 aha_cnty <- aha %>%
-	mutate(merger=case_when(merge %in% 1:3~1, TRUE~0), COUNTYFIPS=sprintf('%03.0f', fcntycd)) %>%
-	group_by(aha_year, COUNTYFIPS) %>%
+	# Create merger indicator, 3-digit county FIPS
+	mutate(merger=case_when(merge %in% 1:3~1, TRUE~0),
+		COUNTYFP=sprintf('%03.0f', fcntycd)) %>%
+	# Add hospital mergers over county-years
+	group_by(aha_year, COUNTYFP) %>%
 		summarise(mergers=sum(merger)) %>%
 		ungroup() %>%
-	arrange(COUNTYFIPS, aha_year) %>%
-	group_by(COUNTYFIPS) %>%
-		mutate(merger_2=lag(mergers,2) + lag(mergers,1) + lead(mergers,1) + lead(mergers,2)) %>%
+	arrange(COUNTYFP, aha_year) %>%
+	# Create treatment indicator within each county
+	group_by(COUNTYFP) %>%
+		# If lag/lead does not exists treat as no merger
+		mutate(merger_2=lag(mergers,2,0) + lag(mergers,1,0) + lead(mergers,1,0) + lead(mergers,2,0)) %>%
 		ungroup() %>%
 	mutate(treat=case_when(
 		mergers>0 & merger_2==0 ~ 'Treatment',
@@ -59,22 +68,26 @@ aha_cnty <- aha %>%
 ############################################
 # Merge shapefile and AHA
 ############################################
-assert_that(all(aha_cnty$COUNTYFIPS %in% unique(ny$COUNTYFIPS)), msg='COUNTYFIPS DO NOT MATCH BTWN DATA!')
-ny_aha <- left_join(ny, aha_cnty[aha_cnty$aha_year>=2006,], by='COUNTYFIPS')
-# Fill county-years with no hospitals
-temp_fill <- expand.grid(unique(ny_aha$COUNTYFIPS), unique(ny_aha$aha_year)) %>%
-	filter(Var2!='NA') %>%
-	rename(COUNTYFIPS=Var1, aha_year_fill=Var2)
+assert_that(all(aha_cnty$COUNTYFP %in% unique(ny$COUNTYFP)), msg='COUNTYFIPS DO NOT MATCH BTWN DATA!')
+ny_aha <- left_join(ny, aha_cnty[aha_cnty$aha_year>=2006,], by='COUNTYFP')
+# # Fill county-years with no hospitals
+# temp_fill <- expand.grid(unique(ny_aha$COUNTYFP), seq(2006,2012)) %>%
+# 	rename(COUNTYFP=Var1, aha_year_fill=Var2)
 
-ny_aha <- left_join(temp_fill, ny_aha, by='COUNTYFIPS')
-ny_aha <- ny_aha %>% replace_na(list(treat='Neither'))
+# ny_aha <- left_join(temp_fill, ny_aha, by='COUNTYFP')
+# ny_aha <- ny_aha %>% replace_na(list(treat='Neither')) %>% as_tibble()
 
 
 ############################################
 # Plotting
 ############################################
-cnty_treat_map <- ggplot() +
-	geom_sf(data=ny_aha, aes(fill=treat)) +
-	facet_wrap(~aha_year_fill, ncol=2) +
-	scale_fill_manual('Treatment Group', breaks=c('Treatment', 'Control', 'Neither'), values=c('Treatment'='salmon4', 'Control'='black', 'Neither'='grey30')) +
+ptemp <- ny_aha %>%
+	select(geometry, aha_year, treat) %>%
+	filter(!is.na(aha_year))
+
+ggplot() +
+	geom_sf(data=ptemp, aes(fill=treat)) +
+	facet_wrap(~aha_year, nrow=3) +
+	scale_fill_manual('Treatment Group', breaks=c('Treatment', 'Control', 'Neither'), values=c('Treatment'='tomato2', 'Control'='wheat3', 'Neither'='lightgrey')) +
 	theme_void()
+ggsave("mapping/treatment_counties.pdf", device='pdf')
