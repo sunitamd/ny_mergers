@@ -4,6 +4,7 @@ date: "`r format(Sys.time(), '%B %Y')`"
 output: pdf_document
 header-inlcudes:
     - usepackage{amsmath}
+    - usepackage[document]{ragged2e}
 ---
 
 
@@ -12,7 +13,7 @@ knitr::opts_chunk$set(echo=FALSE)
 knitr::opts_chunk$set(include=TRUE)
 knitr::opts_chunk$set(message=FALSE)
 knitr::opts_chunk$set(warning=FALSE)
-knitr::opts_chunk$set(tidy.opts=list(width.cutoff=60), tidy=TRUE)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=80), tidy=TRUE)
 knitr::opts_knit$set(root.dir='..')
 ```
 
@@ -25,6 +26,27 @@ library(kableExtra)
 theme_set(theme_bw())
 ```
 
+```{r functions, include=FALSE}
+formatMeanSD <- function(mu, sd, digits=1, mark='') {
+    # Format mean (sd) for table output
+
+    return(paste0(
+        format(round(mu, digits), big.mark=mark),
+        ' (',
+        format(round(sd, digits), big.mark=mark),
+        ')'
+    ))
+}
+
+formatPC <- function(val, digits=1) {
+    # Format percentage values for table output
+
+    fmt <- paste0('%2.', digits, 'f%%')
+
+    return(sprintf(fmt, val*100))
+}
+```
+
 ```{r setup, include=FALSE}
 tables <- read_dta("dump/merger_trends.dta")
 ```
@@ -34,7 +56,7 @@ tables <- read_dta("dump/merger_trends.dta")
 
 # Hospital-level trends
 
-```{r, include=TRUE}
+```{r hospital share plot, include=TRUE}
 tables %>% filter(tbl=='hosp_merger_share') %>%
 ggplot(aes(aha_year, value, linetype=factor(ny))) +
     geom_line() +
@@ -43,7 +65,7 @@ ggplot(aes(aha_year, value, linetype=factor(ny))) +
     labs(x='', y='', title='Prop. of hospitals that experienced merger activity')
 ```
 
-```{r, include=TRUE}
+```{r hospital share table, include=TRUE}
 tables %>%
     filter(tbl=='hosp_merger_share') %>%
     mutate(State=ifelse(ny==1,'New York','Other states')) %>%
@@ -63,63 +85,102 @@ tables %>%
 
 - Markets defined as US Counties  
 
-```{r, include=FALSE}
+```{r market_yr tables, include=FALSE}
+# Table metric labels
+tbl_metrics <- list()
+# Order of tables
+tbl_order <- c('merger_n', 'merger_pr', 'closure_pr', 'opening_pr', 'hosp_n', 'beds_n', 'ownership_prforprof', 'ownership_prnonprof', 'ownership_prgov', 'dischargesmedicaid', 'dischargesmedicare')
+
+# Total markets per state
 total_mkts <- tables %>%
     filter(tbl=='total_mkts') %>%
     group_by(ny) %>%
         summarise(value=sum(value)) %>%
-        ungroup()
-total_mkts.ny1 <- filter(total_mkts, ny==1) %>% pull(value) %>% as.numeric()
-total_mkts.ny0 <- filter(total_mkts, ny==0) %>% pull(value) %>% as.numeric()
+        ungroup() %>%
+    arrange(ny) %>%
+    pull(value) %>%
+    as.numeric()
 
-temp_n <- tables %>%
-    filter(tbl %in% c('merger_n')) %>%
-    mutate(val=sprintf('%2.0f', value),
-        State=ifelse(ny==1,'New York','Other states'),
-        tbl=paste0(tbl,type)) %>%
-    select(State, tbl, val) %>%
-    spread(State, val)
+# Table header
+temp_names <- c('', paste0('New York (n=',total_mkts[[2]],')'), paste0('Other states (n=',total_mkts[[1]],')'))
 
-temp_meansd <- tables %>%
-    filter(tbl %in% c('hosp_n', 'beds_n', 'discharges')) %>%
-    mutate(val=paste0(sprintf('%2.2f', mean), ' (', sprintf('%2.2f', mean), ')'),
-        State=ifelse(ny==1,'New York','Other states'),
-        tbl=paste0(tbl,type)) %>%
-    select(State, tbl, val) %>%
-    spread(State, val)
+############################################
+# Format rows of final table
+# Avgerage number of hospitals invovled in a merger
+merger_n <- tables %>%
+    filter(tbl=='merger_n') %>%
+    mutate(val=formatMeanSD(mean, sd, digits=2))
+tbl_metrics$merger_n <- 'Avg. num. of hospitals involved in merger'
 
-temp_pc <- tables %>%
-    filter(tbl %in% c('merger_pr', 'closure_pr', 'opening_pr', 'ownership_pr')) %>%
-    mutate(val=sprintf('%2.2f', value),
-        State=ifelse(ny==1,'New York','Other states'),
-        tbl=paste0(tbl,type)) %>%
-    select(State, tbl, val) %>%
-    spread(State, val)
 
-tbl_order <- c('merger_n', 'merger_pr', 'closure_pr', 'opening_pr', 'hosp_n', 'beds_n', 'ownership_prforprof', 'ownership_prnonprof', 'ownership_prgov', 'dischargesmedicaid', 'dischargesmedicare')
+# Proportion of market-years with a hospital involved in a merger
+merger_pr <- tables %>%
+    filter(tbl=='merger_pr') %>%
+    mutate(val=formatPC(value, 0))
+tbl_metrics$merger_pr <- 'Pct. of market-years w/ a hospital involved in merger'
 
-temp <- bind_rows(temp_n,  temp_meansd, temp_pc) %>%
+# Proportion of market-years with a hospital closure
+closure_pr <- tables %>%
+    filter(tbl=='closure_pr') %>%
+    mutate(val=formatPC(value, 0))
+tbl_metrics$closure_pr <- 'Pct. of market-years w/ a hospital opening'
+
+# Proportion of market-years with a hospital opening
+opening_pr <- tables %>%
+    filter(tbl=='opening_pr') %>%
+    mutate(val=formatPC(value, 0))
+tbl_metrics$opening_pr <- 'Pct. of market-years w/ a hospital closure'
+
+# Average number of hospitals per market-year
+hosp_n <- tables %>%
+    filter(tbl=='hosp_n') %>%
+    mutate(val=formatMeanSD(mean, sd, digits=1))
+tbl_metrics$hosp_n  <- 'Avg. num. of hospitals per market-year'
+
+# Average number of hospital beds (across all hospitals) per market-year
+beds_n <- tables %>%
+    filter(tbl=='beds_n') %>%
+    mutate(val=formatMeanSD(mean, sd, digits=0, mark=','))
+tbl_metrics$beds_n <- 'Avg. num. of beds per market-year'
+
+# Hospital ownership proportions
+ownership_pr <- tables %>%
+    filter(tbl=='ownership_pr') %>%
+    mutate(val=formatPC(value, 1))
+tbl_metrics$ownership_prgov <- 'Avg. (wtd) pct. government ownership type per market-year'
+tbl_metrics$ownership_prforprof <- 'Avg. (wtd) pct. for-profit ownership type per market-year'
+tbl_metrics$ownership_prnonprof <- 'Avg. (wtd) pct. non-profit ownership type per market-year'
+
+
+# Discharges
+discharges <- tables %>%
+    filter(tbl=='discharges') %>%
+    mutate(val=formatMeanSD(mean, sd, digits=0, mark=','))
+tbl_metrics$dischargesmedicaid <- 'Avg. discharges (Medicaid) per market-year'
+tbl_metrics$dischargesmedicare <- 'Avg. discharges (Medicare) per market-year'
+
+
+# Append all tables
+temp <- bind_rows(merger_n, merger_pr, closure_pr, opening_pr, hosp_n, beds_n, ownership_pr, discharges) %>%
+    mutate(tbl=paste0(tbl, type),
+        state=ifelse(ny==1, 'New York', 'Other states'),
+        val=sub('\\([[:space:]]+', '(', val)) %>%
+    select(tbl, state, val) %>%
+    spread(state, val) %>%
+    left_join(stack(tbl_metrics), by=c('tbl'='ind')) %>%
     mutate(tbl=factor(tbl, levels=tbl_order, ordered=TRUE)) %>%
-    mutate(metric=case_when(
-        tbl=='merger_n' ~ 'Number of hosp. involved in merger',
-        tbl=='merger_pr' ~ 'Prop. of market-years w/ hosp. involved in merger',
-        tbl=='closure_pr' ~ 'Prop. of market-years experiencing a hosp. closure',
-        tbl=='opening_pr' ~ 'Prop. of market-years experiencing a hosp. opening',
-        tbl=='hosp_n' ~ 'Avg. number of hosp. per market',
-        tbl=='beds_n' ~ 'Avg. number of beds per market',
-        tbl=='ownership_prforprof' ~ 'Prop. of ownership: for-profit',
-        tbl=='ownership_prnonprof' ~ 'Prop. of ownership: non-profit',
-        tbl=='ownership_prgov' ~ 'Prop. of ownership: government',
-        tbl=='dischargesmedicaid' ~ 'Avg. discharges per market (medicaid)',
-        tbl=='dischargesmedicare' ~ 'Avg. discharges per market (medicare)')) %>%
     arrange(tbl) %>%
-    select(metric, `New York`, `Other states`)
+    select(values, `New York`, `Other states`)
 
-temp_names <- c('', paste0('New York (n=', total_mkts.ny1, ')'), paste0('Other states (n=', total_mkts.ny0, ')')) 
 ```
 
-```{r, include=TRUE}
-temp %>%
-    kable(caption='Market-level averages', col.names=temp_names, align='lcc', format='latex', booktabs=TRUE) %>%
-    kable_styling(latex_options=c('hold_position', 'striped'))
+```{r kable market year table, include=TRUE, fig.align='left'}
+hack_tbl <- temp %>%
+    kable(caption='Market-year level statistics', col.names=temp_names, align='lcc', format='latex', booktabs=TRUE) %>%
+    kable_styling(latex_options=c('hold_position', 'striped', full_width=T)) %>%
+    column_spec(1, width='3in') %>%
+    footnote(general='n=Total number of markets in state')
+# Can't get kable to left aling table position...
+hack_tbl <- sub('\\centering', '', hack_tbl, fixed=TRUE)
+hack_tbl
 ```

@@ -23,7 +23,7 @@ foreach tbl of local table_list {
 ********************************************
 * Data Prep
 ********************************************
-use "`projdir'/data_hosp/aha_combined_final_v2.dta", clear
+use "`projdir'/data_hospclean/aha_combined_final_v2.dta", clear
 
 	* One fstcd is missing
 		levelsof fstcd if stcd==14, local(temp)
@@ -93,14 +93,14 @@ save `hosp_merger_share', replace
 ********************************************
 ** MARKET-YEAR LEVEL STATISTICS
 
-** Number of hospitals involved in a merger
+** Average number of hospitals involved in a merger
 use `master', clear
 
-	* indicate hospitals involved in merger
-		collapse (max) merger, by(ny `mkt' aha_year id)
-	* sum hospitals involved in merger
-		collapse (sum) value=merger, by(ny)
-		gen metric =  "Num. of hospitals involved in merger"
+	* number of hospitals involved in merger per mkt-yr
+		collapse (sum) merger, by(ny `mkt' aha_year)
+	*  average in each state
+		collapse (mean) mean=merger (sd) sd=merger, by(ny)
+		gen metric =  "Avg. num. hosp. involved in merger per mkt-yr"
 
 save `merger_n', replace
 
@@ -108,7 +108,7 @@ save `merger_n', replace
 ** Proportion of market-years with a hospital involved in a merger
 use `master', clear
 	
-	* indicate market-years with a hospital involved in a merger
+	* market-years with a hospital involved in a merger
 		collapse (max) merger, by(ny `mkt' aha_year)
 	* proportion of market-years with a hospital involved in a merger
 		collapse (mean) value=merger, by(ny)
@@ -120,7 +120,7 @@ save `merger_pr', replace
 ** Proportion of market-years experiencing a hospital closure
 use `master', clear
 
-	* indicate market-years experiencing a closure
+	* market-years experiencing a closure
 		gen closure = cond(del_reason_cat=="Closed", 1,0,0)
 		collapse (max) closure, by(ny `mkt' aha_year) fast
 		collapse (mean) value=closure, by(ny)
@@ -142,16 +142,15 @@ save `opening_pr', replace
 
 
 ** Number of hospitals
-
 use `master', clear
 
-	* Count hospitals per market
-		duplicates drop ny `mkt' id, force
+	* Count hospitals per market-yr
+		duplicates drop ny `mkt' aha_year id, force
 		gen one = 1
-		collapse (count) hospitals=one, by(ny `mkt') fast
+		collapse (sum) hospitals=one, by(ny `mkt' aha_year) fast
 	* Average & SD hopsitals/market by state
 		collapse (mean) mean=hospitals (sd) sd=hospitals, by(ny) fast
-		gen metric = "Avg. num. hospitals per mkt"
+		gen metric = "Avg. num. hospitals per mkt-yr"
 
 save `hosp_n', replace
 
@@ -160,10 +159,10 @@ save `hosp_n', replace
 use `master', clear
 
 	* Sum beds across hospitals
-		collapse (sum) hospbd, by(ny `mkt') fast
+		collapse (sum) hospbd, by(ny `mkt' aha_year) fast
 	* Average & SD total beds/market by state
 		collapse (mean) mean=hospbd (sd) sd=hospbd, by(ny) fast
-		gen metric = "Avg. num. of beds per mkt"
+		gen metric = "Avg. num. of beds per mkt-yr"
 
 save `beds_n', replace
 
@@ -172,18 +171,23 @@ save `beds_n', replace
 use `master', clear
 
 	* Ownership type
-		gen type = "gov" if (cntrl>=12 & cntrl<=16) | (cntrl>=41 & cntrl<=48)
-		replace type = "nonprof" if cntrl>=21 & cntrl<=23
-		replace type = "forprof" if cntrl>=31 & cntrl<=33
-		assert type != ""
+		gen gov = 1  if cntrl>=12 & cntrl <=16
+			replace gov = 1 if cntrl>=41 & cntrl<=48
+		gen nonprof = 1 if cntrl>=21 & cntrl<=23
+		gen forprof = 1 if cntrl>=31 & cntrl<=33
 	* Sum ownership types
-		gen one = 1
-		collapse (sum) n=one, by(ny type) fast
-	* Calculate proportion by ownership type
-		bys ny: egen N = total(n)
-		gen value = n / N
-		keep ny type value
-		gen metric = "Prop. ownership types"
+		collapse (count) gov nonprof forprof, by(ny `mkt' aha_year) fast
+	* proportion by ownership type
+		egen N = rowtotal(gov nonprof forpro)
+		gen value_gov = gov / N
+		gen value_nonprof = nonprof / N
+		gen value_forprof = forprof / N
+	* Weighted (by N hosp.) proportion of ownership type
+		collapse (mean) value_* [fw=N], by(ny)
+		reshape long value_, i(ny) j(type) string
+		rename value_ value
+
+		gen metric = "Avg. (wtd) prop. of ownership type per mkt-yr"
 
 save `ownership_pr', replace
 
@@ -192,14 +196,14 @@ save `ownership_pr', replace
 use `master', clear
 
 	* Sum discharge types per market
-		collapse (sum) mcrdc mcddc, by(ny `mkt')
+		collapse (sum) mcrdc mcddc, by(ny `mkt' aha_year)
 		rename *dc discharges*
-		reshape long discharges , i(ny `mkt') j(type) string
+		reshape long discharges , i(ny `mkt' aha_year) j(type) string
 		replace type = "medicaid" if type=="mcd"
 		replace type = "medicare" if type=="mcr"
 	* Average & SD discharges/market by state
 		collapse (mean) mean=discharges (sd) sd=discharges, by(ny type) fast
-		gen metric = "Avg. discharges per mkt"
+		gen metric = "Avg. discharges per mkt-yr"
 
 save `discharges', replace
 
