@@ -1,0 +1,59 @@
+---
+title: "AHA x Cooper Merger Analysis"
+date: "`r format(Sys.time(), '%B %Y')`"
+output: pdf_document
+header-inlcudes:
+    - usepackage{amsmath}
+---
+
+
+```{r rmd_setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+knitr::opts_chunk$set(include=TRUE)
+knitr::opts_chunk$set(message=FALSE)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=60), tidy=TRUE)
+knitr::opts_knit$set(root.dir='..')
+```
+- Investigating hospital-year mergers identified in the AHA (_aha_combined_final_v2.dta_) and Cooper hospital mergers datasets  
+
+## Data
+
+- New York  
+- General, acute care hospitals  
+- 2006-2012  
+
+## Total mergers
+
+- AHA: 47 mergers  
+- Cooper: 67 mergers  
+
+## Non-matching AHA mergers
+
+- 66% (31/47) of AHA mergers do not correspond to a matching hospital-year merger in Cooper  
+
+Of these 31 non-matching AHA mergers:  
+
+### Add/del-only mergers
+
+- 8 mergers based on add/del info only  
+	- None of these add/del-only mergers match to Cooper even at the hospital-level (ignoring year)  
+	- 2 of these add/del-only mergers are hospitals not in Cooper  
+
+### sysid-only mergers
+
+- 23 mergers based on sysid-only:  
+	- 11 sysid-only mergers match to Cooper at hospital-level (ignoring year)   
+		- 3 of these 11 create an "extra" merger at the hospital-level comparing to Cooper
+	- 21 sysid-only mergers involve a missing AHA sysid (sysid missing in the previous year or the year of merger)  
+		- 10 of these 21 match a Cooper merger at the hospital-level   
+
+
+## Next steps
+
+AHA mergers identified by sysid needs further investigation.
+For now, I suggest changing the AHA merger definition to not count mergers identified via changes in the AHA sysid that are changes due to missing sysid values.
+I need to do some light cleaning to match up the sysid's between AHA and Cooper, then I'll fill in the missing AHA sysid's with those from Cooper, regenerate a new AHA merger variable, and see if we get better concordance of hospital-year mergers.
+
+Regarding the non-matching AHA mergers identified by sysid-only, some of the differences at the hospital-year level look like they are due to an information lag in the AHA. That is, there is a merger in a particular hospital-year due to a sysid change, but Cooper shows the sysid change in a different year for the same hospital.
+I'll continue to investigate this, but from my current analysis there doesn't appear to be any systemic pattern, and it may involve some manual corrections if we go with Cooper's sysid.
