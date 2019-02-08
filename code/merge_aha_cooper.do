@@ -42,9 +42,6 @@ save `aha', replace
 * Cooper data
 use "`projdir'/data_hospclean/HC_ext_mergerdata_public.dta", clear
 
-rename sysid sysid_cooper
-label var sysid_cooper "Cooper sysid"
-
 * Merger indicator
 gen merger_cooper = 1 if target==1 | acquirer==1
 replace merger_cooper = 0 if merger_cooper==.
