@@ -42,11 +42,6 @@ save `aha', replace
 * Cooper data
 use "`projdir'/data_hospclean/HC_ext_mergerdata_public.dta", clear
 
-* Merger indicator
-gen merger_cooper = 1 if target==1 | acquirer==1
-replace merger_cooper = 0 if merger_cooper==.
-label var merger_cooper "Cooper merger indicator"
-
 tempfile cooper
 save `cooper', replace
 
