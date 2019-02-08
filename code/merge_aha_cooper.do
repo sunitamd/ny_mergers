@@ -31,7 +31,7 @@ duplicates tag id year, gen(dup)
 drop if dup>0 & add_reason!="Status Changed To Registered"
 
 * Merger indicator
-gen merger_aha = 1 if merge>0
+gen merger_aha = 1 if inlist(merge, 1,2,3)
 replace merger_aha = 0 if merger_aha==.
 label var merger_aha "AHA merger indicator"
 
