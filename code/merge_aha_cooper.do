@@ -51,7 +51,7 @@ save `cooper', replace
 use `aha', clear
 
 merge 1:1 id year using `cooper', gen(_merge)
-label define L__merge 1 "AHA (master)" 2 "Cooper (using)" 3 "Matched", modify
+label define L__merge 1 "1 AHA (master)" 2 "2 Cooper (using)" 3 "3 Matched", modify
 label values _merge L__merge
 
 
