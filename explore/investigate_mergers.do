@@ -24,6 +24,21 @@ keep if serv==10
 * analysis is 2006-2012, but need 2005 to look missing sysid in previous year
 keep if year>=2005 & year<=2012
 
+* quick analysis of years
+bys id: egen year_min = min(year)
+bys id: egen year_max =  max(year)
+bys id: egen year_n = count(year)
+
+qui levelsof id if year_min > 2005, local(ids)
+local temp: word count "`ids'"
+
+di in red `temp'+0 " hospitals do not have data prior to 2006"
+
+qui levelsof id if year_n - 1 != year_max - year_min, local(ids)
+local temp: word count "`ids'"
+
+di in red `temp'+0 " hospitals have a year gap in data"
+
 
 ********************************************
 * Mergers identified by each source separately
@@ -55,6 +70,12 @@ local temp2: di %4.0f `temp_num' / `temp_denom' * 100
 
 
 di in red "Of the " `temp1' "% of AHA mergers that do not match Cooper, " `temp2' "% are due to sysid-only mergers"
+
+* create new merger variable using Cooper's sysid
+gen merger_aha_new = merger_aha
+	replace merger_aha_new = 0  if merge==2
+	bys id: replace merger_aha_new = 1 if (sysid_cooper[_n-1]!=sysid_cooper) & (id[_n-1]==id)
+	label var merger_aha_new "new AHA merger indicator using Cooper sysid"
 
 tempfile aha_cooper
 save `aha_cooper', replace
@@ -117,19 +138,3 @@ local temp `r(N)'
 qui count if merger_match==0 & merge==2 & merger_hosp_match==1 & merger_hosp_aha > merger_hosp_cooper
 
 di in red `r(N)' " out of " `temp' " non-matching sysid-only mergers create extra merger at hospital-level, compared to Cooper"
-
-********************************************
-* create a new merger variable that doesn't include mergers due to previuosly missing sysid
-gen merger_aha_new = merger_aha
-	replace merger_aha_new = 0 if sysid_merge_na==1
-	label var merger_aha_new "AHA merger indicator (no missing sysid mergers)"
-* compare new merger with Cooper
-ta merger_aha_new merger_cooper, m
-ta merger_aha merger_cooper, m
-
-
-* non-sysid-only AHA mergers
-tab merge if merger_aha==1 & merger_match==0, m
-
-
-
