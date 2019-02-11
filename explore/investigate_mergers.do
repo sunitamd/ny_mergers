@@ -34,7 +34,7 @@ local temp: word count "`ids'"
 
 di in red `temp'+0 " hospitals do not have data prior to 2006"
 
-qui levelsof id if year_n - 1 != year_max - year_min, local(ids)
+qui levelsof id if year_n - 1 != year_max - year_min & year>2005, local(ids)
 local temp: word count "`ids'"
 
 di in red `temp'+0 " hospitals have a year gap in data"
@@ -56,9 +56,9 @@ di in red "Cooper mergers: `mergers_cooper'"
 gen merger_match = 1 if merger_aha == merger_cooper & merger_aha==1
 	replace merger_match = 0 if merger_match==.
 qui summarize merger_match if merger_aha==1 & year>2005
-local temp: di %4.2f `r(mean)'
+local temp: di %4.0f `r(mean)'*100
 
-di in red "At hospital-year level, " `temp' * 100 "% of AHA mergers match Cooper merger"
+di in red "At hospital-year level, " `temp' "% of AHA mergers match Cooper merger"
 
 * Investigate the AHA mergers that do not match
 local temp1 = 100 - `temp'*100
@@ -76,6 +76,12 @@ gen merger_aha_new = merger_aha
 	replace merger_aha_new = 0  if merge==2
 	bys id: replace merger_aha_new = 1 if (sysid_cooper[_n-1]!=sysid_cooper) & (id[_n-1]==id)
 	label var merger_aha_new "new AHA merger indicator using Cooper sysid"
+gen merger_match_new = 1 if merger_aha_new == merger_cooper & merger_aha_new==1
+	replace merger_match_new = 0 if merger_match_new==.
+qui summarize merger_match_new if merger_aha_new==1 & year>2005
+local temp: di %4.0f `r(mean)'*100
+
+di in red "At hospital-year level, " `temp' "% of AHA mergers (using Cooper sysid) match Cooper merger"
 
 tempfile aha_cooper
 save `aha_cooper', replace
@@ -138,3 +144,38 @@ local temp `r(N)'
 qui count if merger_match==0 & merge==2 & merger_hosp_match==1 & merger_hosp_aha > merger_hosp_cooper
 
 di in red `r(N)' " out of " `temp' " non-matching sysid-only mergers create extra merger at hospital-level, compared to Cooper"
+
+
+********************************************
+* Cooper mergers not identified by AHA
+use `aha_cooper', clear
+
+keep if year>2005
+
+qui count if merger_aha==0 & merger_cooper==1
+
+di in red `r(N)'+0 " mergers identified by Cooper, not identified by AHA"
+
+* What's the proportion of target/acquirer mergers
+qui sum acquirer if merger_aha==0 & merger_cooper==1
+local temp1 `r(sum)'
+qui sum target if merger_aha==0 & merger_cooper==1
+local temp2 `r(sum)'
+
+di in red "Ratio of acquirer:target among Cooper only mergers is " `temp1' ":" `temp2'
+
+
+********************************************
+* identify GACs in Cooper only
+use "`projdir'/data_hospclean/aha_cooper.dta", clear
+
+gen gac_cooper = 1 if regexm(id, "0[0-8][0-9][0-9]$")
+	replace gac_cooper = 0 if gac_cooper==.
+
+levelsof id if gac_cooper==1 & _merge==2 & year>2005 & year<2013, local(ids)
+local temp: word count `ids'
+
+di in red "There are " `temp' " GAC hospitals in Cooper in 2006-2012"
+
+* need to look up lat/lon to see how many of the above GACs in Cooper only are in New York state.
+
