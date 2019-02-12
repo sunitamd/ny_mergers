@@ -160,7 +160,7 @@ keep if fstcd==36
 * Rehabilitation  3025-3099
 * Other none of above
 
-keep if serv==10 | regexm(id, "0[0-8][0-9][1-9]$")==1
+keep if serv==10 | regexm(id, "0[0-8][0-9][0-9]$")==1
 
 
 ** Merger comparisons
