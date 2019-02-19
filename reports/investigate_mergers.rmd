@@ -22,6 +22,11 @@ knitr::opts_knit$set(root.dir='..')
 - New York  
 - General, acute care hospitals  
 - 2006-2012  
+	- 12 hospitals do not have data prior to 2006  
+	- 14 hospitals have at least a year gap in the data.  
+		- 13 hospitals misisng data in 2007  
+		- 1 hospital missing data in 2006  
+		- 1 hospital missing data in 2007 & 2008  
 
 ## Total mergers
 
@@ -46,7 +51,15 @@ Of these 31 non-matching AHA mergers:
 	- 11 sysid-only mergers match to Cooper at hospital-level (ignoring year)   
 		- 3 of these 11 create an "extra" merger at the hospital-level comparing to Cooper
 	- 21 sysid-only mergers involve a missing AHA sysid (sysid missing in the previous year or the year of merger)  
-		- 10 of these 21 match a Cooper merger at the hospital-level   
+		- 10 of these 21 match a Cooper merger at the hospital-level  
+
+
+## Non-matching Cooper mergers
+
+ - 51 mergers identified by Cooper, not identified by AHA (using original AHA merger variable)
+ 	- 43 acquisition mergers, 8 target mergers
+
+
 
 
 ## Next steps
