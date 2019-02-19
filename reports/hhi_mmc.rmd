@@ -1,0 +1,52 @@
+---
+title: "MMC x HHI Exploratory Analysis"
+date: "`r format(Sys.time(), '%B %Y')`"
+output: pdf_document
+header-inlcudes:
+    - usepackage{amsmath}
+---
+
+
+```{r rmd_setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+knitr::opts_chunk$set(include=TRUE)
+knitr::opts_chunk$set(message=FALSE)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=60), tidy=TRUE)
+knitr::opts_knit$set(root.dir='..')
+```
+
+```{r libraries}
+library(haven)
+library(tidyverse)
+
+theme_set(theme_bw())
+```
+
+```{r data}
+data <- read_dta('dump/hhi_mmc_fe.dta')
+
+# By county-year, calculate pc change in total enrollment
+temp <- data %>%
+	arrange(county, year) %>%
+	mutate(total_enroll_lag=case_when(
+			county==lag(county) ~ lag(total_enroll),
+			TRUE ~ NA_real_),
+		total_enroll_pcd=(total_enroll-total_enroll_lag)/total_enroll_lag) %>%
+	filter(!is.na(total_enroll_pcd)) %>%
+	select(county, year, total_enroll, total_enroll_lag, total_enroll_pcd)
+
+# Re-order counties for flipped coordinates plot
+temp <- temp %>%
+	mutate(county=factor(county, levels=rev(unique(temp$county)), ordered=TRUE))
+```
+
+```{r plot, include=TRUE}
+ggplot(temp, aes(county, total_enroll_pcd)) +
+	geom_point() +
+	geom_errorbar(aes(ymin=low, ymax=high), col='red') +
+	coord_flip() +
+	theme(axis.text.y=element_text(size=6)) +
+	facet_wrap(~year, nrow=2) +
+	labs(x='', y='Pct. change', title='Annual average change in total MMC enrollment')
+```
