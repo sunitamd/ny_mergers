@@ -177,5 +177,10 @@ local temp: word count `ids'
 
 di in red "There are " `temp' " GAC hospitals in Cooper in 2006-2012"
 
-* need to look up lat/lon to see how many of the above GACs in Cooper only are in New York state.
+* lookup lat/lon of these hospitals
+preserve
+
+drop if lat==. | v53==.
+
+opencagegeo, key(5a881b69931d406c8da66f5fca500664) lat(lat) lon(v53)
 
