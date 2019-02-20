@@ -1,0 +1,139 @@
+---
+title: "Hospital Merger Trends"
+date: "`r format(Sys.time(), '%B %d %Y')`"
+output: pdf_document
+header-inlcudes:
+    - usepackage{amsmath}
+    - usepackage[document]{ragged2e}
+---
+
+
+```{r rmd_setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+knitr::opts_chunk$set(include=FALSE)
+knitr::opts_chunk$set(message=FALSE)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=80), tidy=TRUE)
+knitr::opts_knit$set(root.dir='..')
+```
+
+```{r libraries}
+library(haven)
+library(tidyverse)
+library(sf)
+library(RColorBrewer)
+library(assertthat)
+```
+
+```{r plot settings}
+theme_set(theme_bw())
+
+merger_cols <- brewer.pal(5, 'YlOrRd')
+hhi_cols <- brewer.pal(5, 'Paired')
+```
+
+```{r functions}
+```
+
+```{r data}
+hhi <- read_dta("dump/market_treatcontrol_Feb 12.dta")
+cooper <- read_dta("dump/ahacooperall_cleaned.dta")
+```
+
+# HHI & Target Merger Yearly Trends
+
+```{r hhi merger line plot}
+# Prep hhi data
+temp_hhi <- hhi %>%
+	mutate(ny=ifelse(fstcd==36,1,0)) %>%
+	group_by(year, ny) %>%
+		summarise(hhi=mean(avg_hhisys_cnty)) %>%
+		ungroup()
+
+# Prep cooper merger data
+temp_cooper <- cooper %>%
+	filter(year>=2006, year<=2012, !is.na(fstcd)) %>%
+	mutate(ny=ifelse(fstcd==36,1,0)) %>%
+	# total target mergers per county
+	group_by(year, ny, fcounty) %>%
+		summarise(targets=sum(target, na.rm=TRUE)) %>%
+		ungroup() %>%
+	# state averages
+	group_by(year, ny) %>%
+		summarise(targets=mean(targets)) %>%
+		ungroup() %>%
+	mutate(targets_norm=scales::rescale(targets, to=c(0,1)))
+target_max <- max(temp_cooper$targets)
+target_min <- min(temp_cooper$targets)
+```
+```{r, include=TRUE}
+ggplot(temp_hhi, aes(year, hhi, linetype=factor(ny))) +
+	geom_line(aes(col='HHI')) +
+	geom_line(data=temp_cooper, aes(year, targets_norm, linetype=factor(ny), col='Mergers')) +
+	scale_linetype_manual('', breaks=c('1', '0'), labels=c('1'='New York', '0'='Other states'), values=c('1'=1, '0'=2)) +
+	scale_color_manual(values=c('HHI'='black', 'Mergers'='tomato2')) +
+	scale_x_continuous(breaks=seq(2006,2012,2)) +
+	scale_y_continuous(sec.axis=sec_axis(~.*(target_max - target_min) + target_min, name='Mergers')) +
+	labs(x='', y='HHI', title='Average HHI and number of mergers per county', subtitle='Mergers include only targets', col='')
+```
+
+# Mergers and HHI in New York
+
+```{r map setup}
+# prep NY shapefile
+us_shp <- read_sf('mapping/shapefiles/cb_2017_us_county_20m/cb_2017_us_county_20m.shp')
+ny_shp <- us_shp %>%  filter(STATEFP=='36')
+ny_shp <- st_transform(ny_shp, crs=3857)
+
+# prep hhi data
+temp_hhi <- hhi %>%
+	filter(fstcd==36) %>%
+	mutate(COUNTYFP=substr(cnty,5,7))
+
+# prep cooper merger data
+temp_cooper <- cooper %>%
+	filter(year>=2004, year<=2014, fstcd==36, serv==10) %>%
+	mutate(COUNTYFP=substr(fcounty,3,5)) %>%
+	group_by(year, COUNTYFP) %>%
+		summarise(targets=sum(target,na.rm=TRUE), mergers=targets+sum(acquirer,na.rm=TRUE)) %>%
+		ungroup()
+
+# merge data
+assert_that(all(temp_cooper$COUNTYFP %in% ny_shp$COUNTYFP), msg='COUNTYFP does not match between cooper data and shapefile!')
+ptemp1 <- left_join(ny_shp, temp_cooper, by='COUNTYFP') %>%
+	filter(!is.na(year))
+
+assert_that(all(temp_hhi$COUNTYFP %in% ny_shp$COUNTYFP), msg='COUNTYFP does not match between hhi data and shapefile!')
+ptemp2 <- left_join(ny_shp, temp_hhi, by='COUNTYFP') %>% filter(!is.na(year))
+```
+
+```{r map mergers, include=TRUE, fig.width=8, fig.asp=1}
+ggplot() +
+	geom_sf(data=ptemp1, aes(fill=mergers)) +
+	facet_wrap(~year, ncol=3) +
+	scale_fill_gradientn('Mergers', colors=merger_cols) +
+	theme_void() +
+	theme(panel.grid=element_line(color='white')) +
+	labs(title='Mergers (all)', subtitle='GAC Hospitals')
+```
+
+
+```{r map targets, include=TRUE, fig.width=8, fig.asp=1}
+ggplot() +
+	geom_sf(data=ptemp1, aes(fill=targets)) +
+	facet_wrap(~year, ncol=3) +
+	scale_fill_gradientn('Mergers', colors=merger_cols) +
+	theme_void() +
+	theme(panel.grid=element_line(color='white')) +
+	labs(title='Mergers (targets)', subtitle='GAC Hospitals')
+```
+
+```{r map hhi, include=TRUE}
+ggplot() +
+	geom_sf(data=ptemp2, aes(fill=avg_hhisys_cnty)) +
+	facet_wrap(~year, ncol=3) +
+	scale_fill_gradientn('HHI', colors=hhi_cols, values=c(0, 0.01, 0.15, 0.25, 1), breaks=c(0.01, 0.15, 0.25, 0.5, 1)) +
+	theme_void() +
+	theme(panel.grid=element_line(color='white')) +
+	labs(title='HHI (system)')
+```
