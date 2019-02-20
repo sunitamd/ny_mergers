@@ -65,6 +65,13 @@ egen county_id = group(county)
 xtset county_id year
 xtreg total_enroll avg_hhisys_cnty i.year, fe
 
+* Predict county-level time-invariant fixed effects
+predict county_effect, u
+* Predicted total_enrollment including county-level FE
+predict total_enroll_hat, xbu
+* Predict standard error of prediction (w/o county-level FE)
+predict total_enroll_se, stdp
+
 
 
 
