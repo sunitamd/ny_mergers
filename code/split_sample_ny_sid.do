@@ -10,7 +10,7 @@ set more off
 * Macros
 
 local scratch_dir "/gpfs/scratch/azc211/ny_sid"
-local proj_dir "/gpfs/data/desailab/ny_mergers"
+local proj_dir "/gpfs/data/desailab/home/ny_mergers"
 
 * USER SWITCH
 * sample=1 to draw random samples from each year; sample=0 to save each year in whole
