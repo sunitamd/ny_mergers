@@ -16,7 +16,7 @@ args scratch_dir proj_dir year sample
 local log_file "`scratch_dir'/logs/ny_sid_`year'"
 
 * Variables and obsverations to read in
-local vars "pstco hospstco ahaid year ayear pay1 zipinc_qrtl u_blood u_cath u_ccu u_chestxray u_ctscan u_dialysis u_echo u_ed u_eeg u_ekg u_epo u_icu u_lithotripsy u_mhsa u_ mrt u_newbn2l u_newbn3l u_newbn4l u_nucmed u_observation u_occtherapy u_organacq u_othimplants u_pacemaker u_p hytherapy u_radtherapy u_resptherapy u_speechtherapy u_stress u_ultrasound"
+local vars "pstco hospstco ahaid year ayear pay1 zipinc_qrtl u_blood u_cath u_ccu u_chestxray u_ctscan u_dialysis u_echo u_ed u_eeg u_ekg u_epo u_icu u_lithotripsy u_mhsa u_mrt u_newbn2l u_newbn3l u_newbn4l u_nucmed u_observation u_occtherapy u_organacq u_othimplants u_pacemaker u_p hytherapy u_radtherapy u_resptherapy u_speechtherapy u_stress u_ultrasound"
 
 /* Data should be sorted by year
  Calendar |
