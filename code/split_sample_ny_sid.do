@@ -20,7 +20,7 @@ local sample 1
 ********************************************
 * Run program
 
-foreach year in 2006/2011 {
+forvalues year=2006/2011 {
 
 	!sbatch "batch/split_sample_ny_sid.sh" "`scratch_dir'" "`proj_dir'" `year' `sample'
 }
