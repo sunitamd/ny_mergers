@@ -63,11 +63,13 @@ use in `start`year''/`end`year'' using "`proj_dir'/data_sidclean/sid_work/ny_sid
 keep `vars'
 
 if `sample' {
-	sample 1000
+	sample 25
+	compress
 
 	save "`proj_dir'/data_sidclean/ny_sid_supp/samples/ny_sid_sample_`year'.dta", replace
 }
 else {
+	compress
 
 	save "`proj_dir'/data_sidclean/ny_sid_supp/ny_sid_`year'.dta", replace
 }
