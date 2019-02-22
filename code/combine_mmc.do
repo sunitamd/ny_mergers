@@ -8,7 +8,7 @@ set more off
 
 ********************************************
 * Macros
-local proj_dir "/gpfs/data/desailab/home/"
+local proj_dir "/gpfs/data/desailab/home"
 local data_dir "`proj_dir'/orig_data/total_enrollment"
 
 
@@ -20,7 +20,7 @@ foreach y of num 4/5 {
 	local f = 2000 + `y'
 	foreach t of num 1/12 {
 		local m : di %02.0f `t'
-		import excel "`data_dir'/total_enrollment/`f'/`f'-`m'_eligibles.xls", cellrange(A10:P69) clear
+		import excel "`data_dir'/`f'/`f'-`m'_eligibles.xls", cellrange(A10:P69) clear
  
 		rename A county
 		rename B total_enroll
@@ -59,7 +59,7 @@ foreach y of num 6/7 {
 	local f = 2000 + `y'
 	foreach t of num 1/12 {
 		local m : di %02.0f `t'
-		import excel "`data_dir'/total_enrollment/`f'/`f'-`m'_eligibles.xls", cellrange(A7:P66) clear
+		import excel "`data_dir'/`f'/`f'-`m'_eligibles.xls", cellrange(A7:P66) clear
  
 		rename A county
 		rename B total_enroll
@@ -98,7 +98,7 @@ foreach y of num 8/12 {
 	local f = 2000 + `y'
 	foreach t of num 1/12 {
 		local m : di %02.0f `t'
-		import excel "`data_dir'/total_enrollment/`f'/`f'-`m'_enrollees.xls", cellrange(A7:P66) clear
+		import excel "`data_dir'/`f'/`f'-`m'_enrollees.xls", cellrange(A7:P66) clear
  
 		rename A county
 		rename B total_enroll
