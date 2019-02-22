@@ -59,14 +59,12 @@ merge 1:1 year county using `mmc', assert(2 3) keep(3) nogen
 ********************************************
 * Run linear fixed effects model
 
-drop if county=="NYC"
-
 gen total_enroll_lg = log(total_enroll)
-
 egen county_id = group(county)
 
 xtset county_id year
-xtreg total_enroll_lg avg_hhisys_cnty i.year, fe
+
+xtreg total_enroll_lg avg_hhisys_cnty i.year if county!="NYC", fe
 
 * Predict county-level time-invariant fixed effects
 predict county_effect, u
