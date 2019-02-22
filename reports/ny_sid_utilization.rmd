@@ -5,6 +5,7 @@ output: pdf_document
 header-inlcudes:
     - usepackage{amsmath}
     - usepackage[document]{ragged2e}
+    - usepackage{float}
 ---
 
 
@@ -50,7 +51,7 @@ dat_inc <- read_dta('dump/ny_sid_supp_inc.dta')
 
 # Share of service utilization by payer type
 
-- *Note:* rows sum to 1.00
+- *Note:* rows sum to 1.0
 
 ```{r prep pay}
 vars <- names(dat_pay)[grep('_pc$', names(dat_pay))]
@@ -100,7 +101,8 @@ for (year in years) {
 	tbl_temp <- pay_years[[!!year]]
 	
 	print(kable(tbl_temp, digits=2, caption=paste0('Service utilization by payer type, ', year), col.names=names(tbl_temp), format='latex', booktabs=TRUE) %>%
-	kable_styling(latex_options=c('hold_position', 'striped')))
+		kable_styling(latex_options=c('HOLD_position', 'striped'))
+		)
 }
 ```
 
@@ -149,17 +151,17 @@ util_years <- lapply(years, function(y, .data=temp_util, .vars=vars) {
 names(util_years) <- years
 ```
 
-```{r print util, include=TRUE}
-printKable(util_years$`2006`, caption=paste0('Payer types by service utilization, ', 2006))
-printKable(util_years$`2007`, caption=paste0('Payer types by service utilization, ', 2007))
-printKable(util_years$`2008`, caption=paste0('Payer types by service utilization, ', 2008))
-printKable(util_years$`2009`, caption=paste0('Payer types by service utilization, ', 2009))
-printKable(util_years$`2010`, caption=paste0('Payer types by service utilization, ', 2010))
-printKable(util_years$`2011`, caption=paste0('Payer types by service utilization, ', 2011))
-printKable(util_years$`2012`, caption=paste0('Payer types by service utilization, ', 2012))
+```{r print util, include=TRUE, results='asis'}
+for (year in years) {
+	tbl_temp <- util_years[[!!year]]
+	
+	print(kable(tbl_temp, digits=2, caption=paste0('Payer types by service utilization, ', year), col.names=names(tbl_temp), format='latex', booktabs=TRUE) %>%
+		kable_styling(latex_options=c('HOLD_position', 'striped', 'scale_down'))
+		)
+}
 ```
 
-
 # Share of service utilization by household income quartiles
+
 ```{r prep inc}
 ```
