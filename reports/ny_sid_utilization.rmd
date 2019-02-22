@@ -6,6 +6,7 @@ header-inlcudes:
     - usepackage{amsmath}
     - usepackage[document]{ragged2e}
     - usepackage{float}
+urlcolor: red
 ---
 
 
@@ -48,16 +49,16 @@ dat_util <- read_dta('dump/ny_sid_supp_util.dta')
 dat_inc <- read_dta('dump/ny_sid_supp_inc.dta')
 ```
 
+# Tables
 
-# Share of service utilization by payer type
+## Share of service utilization by payer type
 
-- *Note:* rows sum to 1.0
+- *Note:* Years broken into 3 tables, rows sum to 1.0 across 3 tables
 
 ```{r prep pay}
 vars <- names(dat_pay)[grep('_pc$', names(dat_pay))]
 
 temp_pay <- dat_pay %>%
-	select(year, pay1, !!vars) %>%
 	mutate(
 		payer=case_when(
 			pay1==1 ~ 'Medicare',
@@ -107,7 +108,7 @@ for (year in years) {
 ```
 
 
-# Share of payer types by service utilization
+## Share of payer types by service utilization
 
 - *Note:* rows sum to 1.0
 
@@ -154,14 +155,93 @@ names(util_years) <- years
 ```{r print util, include=TRUE, results='asis'}
 for (year in years) {
 	tbl_temp <- util_years[[!!year]]
+	tbl_temp1 <- tbl_temp[, c(1:11)]
+	tbl_temp2 <- tbl_temp[, c(1,12:21)]
+	tbl_temp3 <- tbl_temp[, c(1,22:31)]
 	
-	print(kable(tbl_temp, digits=2, caption=paste0('Payer types by service utilization, ', year), col.names=names(tbl_temp), format='latex', booktabs=TRUE) %>%
-		kable_styling(latex_options=c('HOLD_position', 'striped', 'scale_down'))
+	print(kable(tbl_temp1, digits=2, caption=paste0('Payer types by service utilization, ', year, ' (1/3)'), col.names=names(tbl_temp1), format='latex', booktabs=TRUE) %>%
+		kable_styling(latex_options=c('HOLD_position', 'striped')) %>%
+		row_spec(0, angle=-45)
+		)
+	print(kable(tbl_temp2, digits=2, caption=paste0('Payer types by service utilization, ', year, ' (2/3)'), col.names=names(tbl_temp2), format='latex', booktabs=TRUE) %>%
+		kable_styling(latex_options=c('HOLD_position', 'striped')) %>%
+		row_spec(0, angle=-45)
+		)
+	print(kable(tbl_temp3, digits=2, caption=paste0('Payer types by service utilization, ', year, ' (3/3)'), col.names=names(tbl_temp2), format='latex', booktabs=TRUE) %>%
+		kable_styling(latex_options=c('HOLD_position', 'striped')) %>%
+		row_spec(0, angle=-45)
 		)
 }
 ```
 
-# Share of service utilization by household income quartiles
+## Share of service utilization by estimated median household income of residents in the patient's ZIP Code
+
+- *Note:* rows sum to 1.00.
+Dollar amounts for quartiles change annually, see [here](https://www.hcup-us.ahrq.gov/db/vars/siddistnote.jsp?var=zipinc_qrtl)
 
 ```{r prep inc}
+vars <- names(dat_inc)[grep('_pc$', names(dat_inc))]
+
+temp_inc <- dat_inc %>%
+	mutate(zipinc_qrtl=case_when(
+		is.na(zipinc_qrtl) ~ 'Missing',
+		TRUE ~ paste0('Qrtl ', zipinc_qrtl))) %>%
+	arrange(year, zipinc_qrtl) %>%
+	select(year, zipinc_qrtl, !!vars)
+
+years <- 2006:2012
+# Format each year into separate table
+inc_years <- lapply(years, function(y, .data=temp_inc, .vars=vars) {
+	.temp <- .data %>%
+		filter(year==!!y) %>%
+		select(zipinc_qrtl, !!.vars) %>%
+		t()
+
+	# Grep col & row names
+	inc_qrtls <- .temp[1,]
+	services <- sub('_pc$', '', row.names(.temp[-1,]))
+	# Cast to tibble
+	.temp <- .temp[-1,] %>% as_tibble(rownames=NA)
+	# Set col names
+	names(.temp) <- inc_qrtls
+	# Convert percentages to numeric
+	.temp <- mutate_all(.temp, .funs=as.numeric)
+	# Add utilization services
+	.temp <- mutate(.temp, service=!!services) %>%
+		select(service, everything()) %>%
+		select(-Missing, everything())
+
+	return(.temp)
+})
+names(inc_years) <- years
 ```
+
+```{r print inc, include=TRUE, results='asis'}
+for (year in years) {
+	tbl_temp <- inc_years[[!!year]]
+	
+	print(kable(tbl_temp, digits=2, caption=paste0('Service utilization by est. median zipcode income quartile, ', year), col.names=names(tbl_temp), format='latex', booktabs=TRUE) %>%
+		kable_styling(latex_options=c('HOLD_position', 'striped'))
+		)
+}
+```
+
+
+# Heatmaps
+
+## Share of service utilization by payer types
+
+```{r}
+temp <- pay_years$`2011` %>%
+	gather(payer, share, Medicare:Other)
+
+
+ggplot(temp, aes(payer, service)) +
+	geom_tile(aes(fill=share))
+```
+
+
+## Share of payer types by service utilization
+
+
+## Share of service utilization by estimated median household income of residents in the patient's ZIP Code
