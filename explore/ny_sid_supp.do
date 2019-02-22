@@ -2,6 +2,8 @@
 * Summary statistics of utilization services in NY SID
 ********************************************
 
+log using "/gpfs/scratch/azc211/ny_sid/logs/ny_sid_supp.smcl"
+
 clear
 set more off
 
@@ -112,3 +114,8 @@ save `all_data', replace
 	}
 
 	save "dump/ny_sid_supp_inc.dta", replace
+
+
+********************************************
+log close
+log translate "/gpfs/scratch/azc211/ny_sid/logs/ny_sid_supp.smcl" "/gpfs/scratch/azc211/ny_sid/logs/ny_sid_supp.log"
