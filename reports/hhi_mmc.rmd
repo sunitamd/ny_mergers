@@ -1,6 +1,6 @@
 ---
 title: "MMC Summary Statistics"
-date: "`r format(Sys.time(), '%B %Y')`"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
 output: pdf_document
 header-inlcudes:
     - usepackage{amsmath}
@@ -38,6 +38,8 @@ rownames(change_enroll) <- rownames(temp)[3:9]
 rownames(pct_enroll) <- rownames(temp)[3:9]
 rownames(total_enroll) <- rownames(temp)[3:9]
 ```
+
+*Note:* Report updated to exclude NYC counties
 
 # Average annual change in total enrollment across counties
 

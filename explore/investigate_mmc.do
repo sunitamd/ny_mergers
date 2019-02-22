@@ -10,13 +10,14 @@ set more off
 * Macros
 
 local proj_dir "/gpfs/data/desailab/home/ny_mergers"
-local data_dir "/gpfs/home/azc211/ny_mergers/dump"
 
 
 ********************************************
 * Read in medicaid enrollee data
 
-use "`data_dir'/mmc_totals.dta", clear
+use "`proj_dir'/data_hospclean/mmc_totals.dta", clear
+
+drop if county=="NYC"
 
 * Collapse total enrollees to county-year
 collapse (mean) total_enroll, by(county year) fast
@@ -38,6 +39,6 @@ sort metric year
 
 
 * Save
-save "`data_dir'/mmc_summary_stats.dta", replace
+save "/gpfs/home/azc211/ny_mergers/dump/mmc_summary_stats.dta", replace
 
 
