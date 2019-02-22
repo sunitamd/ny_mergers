@@ -8,7 +8,8 @@ set more off
 
 ********************************************
 * Macros
-local data_dir "/gpfs/home/azc211/ny_mergers/dump/"
+local proj_dir "/gpfs/data/desailab/home/"
+local data_dir "`proj_dir'/orig_data/total_enrollment"
 
 
 ********************************************
@@ -158,6 +159,7 @@ forvalues i = 2005/2012 {
 
 replace county = trim(county)
 
-save "`data_dir'/mmc_totals.dta", replace
+save "`proj_dir'/ny_mergers/data_hospclean/mmc_totals.dta", replace
+!chmod g+rw "`proj_dir'/ny_mergers/data_hospclean/mmc_totals.dta"
 
 
