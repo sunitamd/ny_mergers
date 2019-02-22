@@ -11,7 +11,7 @@ set more off
 ********************************************
 * Macros
 
-local sample $1
+local sample `1'
 
 local proj_dir "/gpfs/data/desailab/home/ny_mergers"
 local sample_data "`proj_dir'/data_sidclean/ny_sid_supp/samples/ny_sid_0612_util_sample2.dta"
