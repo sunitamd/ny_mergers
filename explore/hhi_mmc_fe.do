@@ -10,13 +10,12 @@ set more off
 * Macros
 
 local proj_dir  "/gpfs/data/desailab/home/ny_mergers"
-local data_dir "/gpfs/home/azc211/ny_mergers/dump/"
 
 
 ********************************************
 * Read in medicaid enrollee data
 
-use "`data_dir'/mmc_totals.dta", clear
+use "`proj_dir'/data_hospclean/mmc_totals.dta", clear
 
 * Collapse to county-year level
 qui lookfor _ms
@@ -30,7 +29,7 @@ save `mmc', replace
 
 * Read in NY county fips
 
-import excel using "`data_dir'/ny_fips.xlsx", firstrow clear
+import excel using "`proj_dir'/inputs/ny_fips.xlsx", firstrow clear
 
 tostring cnty_fips, replace format(%003.0f)
 replace county = trim(subinstr(county, "County", "", 1))
@@ -41,7 +40,7 @@ save `ny_fips', replace
 
 * Read in hospital mergers dataset
 
-use "`data_dir'/ny_treatcontrol_Feb 12.dta", clear
+use "`proj_dir'/data_hospclean/ny_treatcontrol_Feb 12.dta", clear
 
 * map FIPS cnty code to county name
 tostring cnty, gen(cnty_fips)
@@ -60,10 +59,14 @@ merge 1:1 year county using `mmc', assert(2 3) keep(3) nogen
 ********************************************
 * Run linear fixed effects model
 
+drop if county=="NYC"
+
+gen total_enroll_lg = log(total_enroll)
+
 egen county_id = group(county)
 
 xtset county_id year
-xtreg total_enroll avg_hhisys_cnty i.year, fe
+xtreg total_enroll_lg avg_hhisys_cnty i.year, fe
 
 * Predict county-level time-invariant fixed effects
 predict county_effect, u
