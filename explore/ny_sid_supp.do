@@ -1,9 +1,9 @@
 ********************************************
-* Summary statistics of utilization services in NY SID
+* Genearte summary statistics of utilization services in NY SID Supplemental data
 ********************************************
 
-log using "/gpfs/scratch/azc211/ny_sid/logs/ny_sid_supp.smcl", replace
 
+********************************************
 clear
 set more off
 
@@ -11,22 +11,35 @@ set more off
 ********************************************
 * Macros
 
+* User arguments
 local sample `1'
 
+* Directories
 local proj_dir "/gpfs/data/desailab/home/ny_mergers"
-local sample_data "`proj_dir'/data_sidclean/ny_sid_supp/samples/ny_sid_0612_util_sample2.dta"
-local full_data "`proj_dir'/data_sidclean/ny_sid_supp/ny_sid_0612_util.dta"
+local scratch_dir "/gpfs/scratch/azc211"
+
+* Filepaths
+local log_file_stub "`scratch_dir'/logs/ny_sid"
+
+* Varlist
+local vars "key pstco hospstco ahaid year ayear pay1 zipinc_qrtl u_blood u_cath u_ccu u_chestxray u_ctscan u_dialysis u_echo u_ed u_eeg u_ekg u_epo u_icu u_lithotripsy u_mhsa u_mrt u_newbn2l u_newbn3l u_newbn4l u_nucmed u_observation u_occtherapy u_organacq u_othimplants u_pacemaker u_phytherapy u_radtherapy u_resptherapy u_speechtherapy u_stress u_ultrasound"
 
 
 ********************************************
-* Read in subsetted SID data
+* Read in NY SID Supplemental data
+
+log using "`log_file_stub'.smcl"
+
+use "`proj_dir'/data_sidclean/sid_work/ny_sid_0612_supp.dta", clear
+
+keep `vars'
 
 if `sample' {
-	use "`sample_data'", clear
+	* Take 15% sample
+	sample 15
 }
-else {
-	use "`full_data'", clear
-}
+
+compress
 
 * store utilization variables
 qui lookfor u_
@@ -117,5 +130,6 @@ save `all_data', replace
 
 
 ********************************************
+* Close log
 log close
-log translate "/gpfs/scratch/azc211/ny_sid/logs/ny_sid_supp.smcl" "/gpfs/scratch/azc211/ny_sid/logs/ny_sid_supp.log"
+log translate "`log_file_stub'.smcl" "`log_file_stub'.log"
