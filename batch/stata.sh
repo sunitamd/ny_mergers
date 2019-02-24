@@ -8,6 +8,7 @@
 
 
 module load stata/15
+
 RUNDIR=$scratch/slurm/run-${SLURM_JOB_ID/.*}
 mkdir -p $RUNDIR
 

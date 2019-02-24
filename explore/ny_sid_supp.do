@@ -16,7 +16,7 @@ local sample `1'
 
 * Directories
 local proj_dir "/gpfs/data/desailab/home/ny_mergers"
-local scratch_dir "/gpfs/scratch/azc211"
+local scratch_dir "/gpfs/scratch/azc211/ny_sid"
 
 * Filepaths
 local log_file_stub "`scratch_dir'/logs/ny_sid"
