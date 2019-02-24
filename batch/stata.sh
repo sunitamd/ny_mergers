@@ -1,10 +1,7 @@
 #!/bin/bash
-#SBATCH --partition=gpu4_dev
-#SBATCH --time=4:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=2
-#SBATCH --mem=256GB
+#SBATCH --cpus-per-task=1
 #SBATCH --mail-type=END
 #SBATCH --mail-user=alanzchen@nyu.edu
 #SBATCH --output=$scratch/slurm/slurm_%j.out
@@ -16,8 +13,11 @@ mkdir -p $RUNDIR
 
 
 # Command line  arguments
-ARGS=$1
+export STATA_DO="stata -b do \"$1\""
+shift
+export $ARGS=$@
 
 
 # Run job
-stata -b do "explore/ny_sid_supp.do" $ARGS
+$STATA_DO $ARGS
+echo "$STATA_DO $ARGS"
