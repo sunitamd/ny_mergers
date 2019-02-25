@@ -43,7 +43,7 @@ dat_util <- read_dta('dump/ny_sid_supp_util.dta')
 # Utilization by household income quartiles
 dat_inc <- read_dta('dump/ny_sid_supp_inc.dta')
 
-services <- sort(unique(dat_util$service))
+service_values <- sort(unique(dat_util$service))
 service_labels <- c(
 	'Blood', 'Cardiac Cath. Lab', 'CCU', 'Chest XRay', 'CT Scan',
 	'Dialysis', 'Echo', 'Emer. Dept.', 'EEG', 'EKG', 'Erythropoietin',
@@ -96,6 +96,7 @@ pay_years <- lapply(years, function(y, .data=temp_pay, .vars=vars) {
 	.temp <- mutate_all(.temp, .funs=as.numeric)
 	# Add utilization services
 	.temp <- mutate(.temp, service=!!services) %>%
+		mutate(service=factor(service, levels=service_values, labels=service_labels, ordered=TRUE)) %>%
 		select(service, everything())
 
 	return(.temp)
@@ -141,9 +142,10 @@ util_years <- lapply(years, function(y, .data=temp_util, .vars=vars) {
 	.temp <- .temp[-1,] %>% as_tibble(rownames=NA)
 	# Set col names
 	names(.temp) <- services
+	data.table::setnames(.temp, old=service_values, new=service_labels)
 	# Convert percentages to numeric
 	.temp <- mutate_all(.temp, .funs=as.numeric)
-	# Add utilization services
+	# Add payer types
 	.temp <- mutate(.temp, payer=!!payer_types) %>%
 		mutate(payer=case_when(
 			payer=='pay_1' ~ 'Medicare',
@@ -217,6 +219,7 @@ inc_years <- lapply(years, function(y, .data=temp_inc, .vars=vars) {
 	.temp <- mutate_all(.temp, .funs=as.numeric)
 	# Add utilization services
 	.temp <- mutate(.temp, service=!!services) %>%
+		mutate(service=factor(service, levels=service_values, labels=service_labels, ordered=TRUE)) %>%
 		select(service, everything()) %>%
 		select(-Missing, everything())
 
@@ -252,14 +255,14 @@ all_pay <- bind_rows(pay_years)
 all_pay$year <- rep(2006:2012, each=rows)
 pay_heat <- all_pay %>%
 	gather(payer, share, Medicare:Other) %>%
-	mutate(payer=factor(payer, levels=c('Medicaid', 'Medicare', 'Private ins.', 'Self-pay', 'Other', 'No charge'), ordered=TRUE),
-		service=factor(service, levels=rev(services), labels=rev(service_labels), ordered=TRUE))
+	mutate(payer=factor(payer, levels=c('Medicaid', 'Medicare', 'Private ins.', 'Self-pay', 'Other', 'No charge'), ordered=TRUE))
 ```
 
 ```{r pay heatmap, include=TRUE}
 ggplot(pay_heat, aes(payer, service)) +
 	geom_tile(aes(fill=share)) +
 	facet_wrap(~year, nrow=3) +
+	scale_y_discrete(limits=rev(levels(pay_heat$service))) +
 	scale_fill_gradientn(name='Prop.', colors=YlOrBr9, limits=c(0,1)) +
 	labs(x='', y='', title='Service utilization by payer type', subtitle='rows sum to 1.00') +
 	theme(axis.text.x=element_text(angle=60, hjust=1))
@@ -271,8 +274,9 @@ ggplot(pay_heat, aes(year, service)) +
 	geom_tile(aes(fill=share)) +
 	facet_wrap(~payer, nrow=2) +
 	scale_x_continuous(breaks=seq(2006,2012,1)) +
+	scale_y_discrete(limits=rev(levels(pay_heat$service))) +
 	scale_fill_gradientn(name='Prop.', colors=YlOrBr9, limits=c(0,1)) +
-	labs(x='', y='', title='Service utilization by payer type', subtitle='Payer types sum to 1.00; this ver. better shows time trend within payer types')
+	labs(x='', y='', title='Service utilization by payer type over time', subtitle='Payer types sum to 1.00; this ver. better shows time trend within payer types')
 ```
 \pagebreak
 
@@ -284,9 +288,8 @@ rows <- unique(sapply(util_years, nrow))
 all_util <- bind_rows(util_years)
 all_util$year <- rep(2006:2012, each=rows)
 util_heat <- all_util %>%
-	gather(util, share, blood:ultrasound) %>%
-	mutate(payer=factor(payer, levels=c('Medicaid', 'Medicare', 'Private ins.', 'Self-pay', 'Other', 'No charge'), ordered=TRUE),
-		util=factor(util, levels=services, labels=service_labels, ordered=TRUE))
+	gather(util, share, Blood:Ultrasound) %>%
+	mutate(payer=factor(payer, levels=c('Medicaid', 'Medicare', 'Private ins.', 'Self-pay', 'Other', 'No charge'), ordered=TRUE))
 ```
 
 ```{r util heatmap, include=TRUE}
@@ -305,7 +308,7 @@ ggplot(util_heat, aes(year, payer)) +
 	facet_wrap(~util, nrow=6) +
 	scale_x_continuous(breaks=seq(2006,2012,1)) +
 	scale_fill_gradientn(name='Prop.', colors=YlOrBr9, limits=c(0,1)) +
-	labs(x='', y='', title='Payer type by service utilization', subtitle='Service utilizations sum to 1.00; this ver. better shows time trend within payer types') +
+	labs(x='', y='', title='Payer type by service utilization over time', subtitle='Service utilizations sum to 1.00; this ver. better shows time trend within payer types') +
 	theme(axis.text.x=element_text(angle=60, hjust=1))
 ```
 \pagebreak
@@ -319,14 +322,14 @@ all_inc <- bind_rows(inc_years)
 all_inc$year <- rep(2006:2012, each=rows)
 inc_heat <- all_inc %>%
 	gather(inc, share, `Qrtl 1`:Missing) %>%
-	mutate(inc=factor(inc, levels=c('Qrtl 1', 'Qrtl 2', 'Qrtl 3', 'Qrtl 4', 'Missing'), labels=c('Quartile 1', 'Quartile 2', 'Quartile 3', 'Quartile 4', 'Missing'), ordered=TRUE),
-		service=factor(service, levels=rev(services), labels=rev(service_labels), ordered=TRUE))
+	mutate(inc=factor(inc, levels=c('Qrtl 1', 'Qrtl 2', 'Qrtl 3', 'Qrtl 4', 'Missing'), labels=c('Quartile 1', 'Quartile 2', 'Quartile 3', 'Quartile 4', 'Missing'), ordered=TRUE))
 ```
 
 ```{r inc heatmap, include=TRUE}
 ggplot(inc_heat, aes(inc, service)) +
 	geom_tile(aes(fill=share)) +
 	facet_wrap(~year, nrow=3) +
+	scale_y_discrete(limits=rev(levels(inc_heat$service))) +
 	scale_fill_gradientn(name='Prop.', colors=YlOrBr9, limits=c(0,1)) +
 	labs(x='', y='', title='Service utilization by estimated median household income of patient\'s zipcode', subtitle='rows sum to 1.00')
 ```
@@ -337,6 +340,7 @@ ggplot(inc_heat, aes(year, service)) +
 	geom_tile(aes(fill=share)) +
 	facet_wrap(~inc, nrow=2) +
 	scale_x_continuous(breaks=seq(2006,2012,1)) +
+	scale_y_discrete(limits=rev(levels(inc_heat$service))) +
 	scale_fill_gradientn(name='Prop.', colors=YlOrBr9, limits=c(0,1)) +
-	labs(x='', y='', title='Service utilization by estimated median household income of patient\'s zipcode', subtitle='Quartiles sum to 1.00; this ver. better shows time trend within income quartiles')
+	labs(x='', y='', title='Service utilization by estimated median household income of patient\'s zipcode over time', subtitle='Quartiles sum to 1.00; this ver. better shows time trend within income quartiles')
 ```
