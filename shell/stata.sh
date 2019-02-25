@@ -4,6 +4,7 @@
 #SBATCH --cpus-per-task=2
 #SBATCH --mail-type=END
 #SBATCH --mail-user=alanzchen@nyu.edu
+#SBATCH --output=slurm/slurm_%j.out
 
 
 module load stata/15
@@ -17,7 +18,7 @@ PROJDIR=/gpfs/home/azc211/ny_mergers
 # Command line  arguments
 export STATA_DO="stata -b do \"$PROJDIR/$1\""
 shift
-export $ARGS=$@
+export ARGS=$@
 
 
 # Run job
