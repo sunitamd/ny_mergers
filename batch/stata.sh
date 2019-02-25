@@ -12,13 +12,15 @@ module load stata/15
 RUNDIR=$scratch/slurm/run-${SLURM_JOB_ID/.*}
 mkdir -p $RUNDIR
 
+PROJDIR=/gpfs/home/azc211/ny_mergers
+
 
 # Command line  arguments
-export STATA_DO="stata -b do \"$1\""
+export STATA_DO="stata -b do \"$PROJDIR/$1\""
 shift
 export $ARGS=$@
 
 
 # Run job
-$STATA_DO $ARGS
 echo "$STATA_DO $ARGS"
+$STATA_DO $ARGS
