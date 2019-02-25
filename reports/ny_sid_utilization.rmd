@@ -28,16 +28,11 @@ library(RColorBrewer)
 
 ```{r plot settings}
 theme_set(theme_bw())
+
+YlOrBr9 <- brewer.pal(9, 'YlOrBr')
 ```
 
 ```{r functions}
-printKable <- function(tbl_data, caption='') {
-	# Print kable of utilization x payer data
-
-		kable(tbl_temp, digits=2, caption=paste0('Payer types by service utilization, ', year), col.names=names(tbl_temp), format='latex', booktabs=TRUE, longtable=TRUE) %>%
-		kable_styling(latex_options=c('hold_position', 'striped', 'repeat_header'))
-		
-}
 ```
 
 ```{r data}
@@ -47,9 +42,21 @@ dat_pay <- read_dta('dump/ny_sid_supp_pay.dta')
 dat_util <- read_dta('dump/ny_sid_supp_util.dta')
 # Utilization by household income quartiles
 dat_inc <- read_dta('dump/ny_sid_supp_inc.dta')
+
+services <- sort(unique(dat_util$service))
+service_labels <- c(
+	'Blood', 'Cardiac Cath. Lab', 'CCU', 'Chest XRay', 'CT Scan',
+	'Dialysis', 'Echo', 'Emer. Dept.', 'EEG', 'EKG', 'Erythropoietin',
+	'ICU', 'Lithotripsy', 'Mental Health/Sub. Abuse', 'MRT',
+	'Newborn 2', 'Newborn 3', 'Newborn 4', 'Nuclear Med.',
+	'Obs.', 'Occ. Therapy', 'Organ Acq.', 'Other Implants',
+	'Pacemaker', 'Phys. Therapy', 'Radiology/Chemo.', 'Resp. Therapy',
+	'Speech Therapy', 'Cardiac Stress', 'Ultrasound')
+years <- 2006:2012
 ```
 
 # Tables
+
 
 ## Share of service utilization by payer type
 
@@ -71,7 +78,6 @@ temp_pay <- dat_pay %>%
 	arrange(year, pay1) %>%
 	select(year, payer, !!vars)
 
-years <- 2006:2012
 # Format each year into separate table
 pay_years <- lapply(years, function(y, .data=temp_pay, .vars=vars) {
 	.temp <- .data %>%
@@ -98,14 +104,16 @@ names(pay_years) <- years
 ```
 
 ```{r print pay, include=TRUE, results='asis'}
-for (year in years) {
-	tbl_temp <- pay_years[[!!year]]
+for (i in 1:length(years)) {
+	year <- years[[i]]
+	tbl_temp <- pay_years[[i]]
 	
 	print(kable(tbl_temp, digits=2, caption=paste0('Service utilization by payer type, ', year), col.names=names(tbl_temp), format='latex', booktabs=TRUE) %>%
 		kable_styling(latex_options=c('HOLD_position', 'striped'))
 		)
 }
 ```
+\pagebreak
 
 
 ## Share of payer types by service utilization
@@ -119,7 +127,6 @@ temp_util <- dat_util %>%
 	arrange(year, service_id) %>%
 	select(year, service, !!vars)
 
-years <- 2006:2012
 # Format each year into separate table
 util_years <- lapply(years, function(y, .data=temp_util, .vars=vars) {
 	.temp <- .data %>%
@@ -153,8 +160,9 @@ names(util_years) <- years
 ```
 
 ```{r print util, include=TRUE, results='asis'}
-for (year in years) {
-	tbl_temp <- util_years[[!!year]]
+for (i in 1:length(years)) {
+	year <- years[[i]]
+	tbl_temp <- util_years[[i]]
 	tbl_temp1 <- tbl_temp[, c(1:11)]
 	tbl_temp2 <- tbl_temp[, c(1,12:21)]
 	tbl_temp3 <- tbl_temp[, c(1,22:31)]
@@ -173,6 +181,8 @@ for (year in years) {
 		)
 }
 ```
+\pagebreak
+
 
 ## Share of service utilization by estimated median household income of residents in the patient's ZIP Code
 
@@ -189,7 +199,6 @@ temp_inc <- dat_inc %>%
 	arrange(year, zipinc_qrtl) %>%
 	select(year, zipinc_qrtl, !!vars)
 
-years <- 2006:2012
 # Format each year into separate table
 inc_years <- lapply(years, function(y, .data=temp_inc, .vars=vars) {
 	.temp <- .data %>%
@@ -217,31 +226,103 @@ names(inc_years) <- years
 ```
 
 ```{r print inc, include=TRUE, results='asis'}
-for (year in years) {
-	tbl_temp <- inc_years[[!!year]]
+for (i in 1:length(years)) {
+	year <- years[[i]]
+	tbl_temp <- inc_years[[i]]
 	
 	print(kable(tbl_temp, digits=2, caption=paste0('Service utilization by est. median zipcode income quartile, ', year), col.names=names(tbl_temp), format='latex', booktabs=TRUE) %>%
 		kable_styling(latex_options=c('HOLD_position', 'striped'))
 		)
 }
 ```
+\pagebreak
 
 
 # Heatmaps
 
 ## Share of service utilization by payer types
 
-```{r}
-temp <- pay_years$`2011` %>%
-	gather(payer, share, Medicare:Other)
-
-
-ggplot(temp, aes(payer, service)) +
-	geom_tile(aes(fill=share))
+```{r prep pay heatmap}
+rows <- unique(sapply(pay_years, nrow))
+all_pay <- bind_rows(pay_years)
+all_pay$year <- rep(2006:2012, each=rows)
+pay_heat <- all_pay %>%
+	gather(payer, share, Medicare:Other) %>%
+	mutate(payer=factor(payer, levels=c('Medicaid', 'Medicare', 'Private ins.', 'Self-pay', 'Other', 'No charge'), ordered=TRUE),
+		service=factor(service, levels=rev(services), labels=rev(service_labels), ordered=TRUE))
 ```
+
+```{r pay heatmap, include=TRUE}
+ggplot(pay_heat, aes(payer, service)) +
+	geom_tile(aes(fill=share)) +
+	facet_wrap(~year, nrow=3) +
+	scale_fill_gradientn(name='Prop.', colors=YlOrBr9, limits=c(0,1)) +
+	labs(x='', y='', title='Service utilization by payer type', subtitle='rows sum to 1.00')
+
+ggplot(pay_heat, aes(year, service)) +
+	geom_tile(aes(fill=share)) +
+	facet_wrap(~payer, nrow=2) +
+	scale_x_continuous(breaks=seq(2006,2012,1)) +
+	scale_fill_gradientn(name='Prop.', colors=YlOrBr9, limits=c(0,1)) +
+	labs(x='', y='', title='Service utilization by payer type', subtitle='Payer types sum to 1.00; this ver. better shows time trend within payer types')
+```
+\pagebreak
 
 
 ## Share of payer types by service utilization
 
+```{r prep util heatmap}
+rows <- unique(sapply(util_years, nrow))
+all_util <- bind_rows(util_years)
+all_util$year <- rep(2006:2012, each=rows)
+util_heat <- all_util %>%
+	gather(util, share, blood:ultrasound) %>%
+	mutate(payer=factor(payer, levels=c('Medicaid', 'Medicare', 'Private ins.', 'Self-pay', 'Other', 'No charge'), ordered=TRUE),
+		util=factor(util, levels=services, labels=service_labels, ordered=TRUE))
+```
+
+```{r util heatmap, include=TRUE}
+ggplot(util_heat, aes(util, payer)) +
+	geom_tile(aes(fill=share)) +
+	facet_wrap(~year, nrow=4) +
+	scale_fill_gradientn(name='Prop.', colors=YlOrBr9, limits=c(0,1)) +
+	labs(x='', y='', title='Payer type by service utilization', subtitle='rows sum to 1.00') +
+	theme(axis.text.x=element_text(angle=60, hjust=1))
+
+ggplot(util_heat, aes(year, payer)) +
+	geom_tile(aes(fill=share)) +
+	facet_wrap(~util, nrow=6) +
+	scale_x_continuous(breaks=seq(2006,2012,1)) +
+	scale_fill_gradientn(name='Prop.', colors=YlOrBr9, limits=c(0,1)) +
+	labs(x='', y='', title='Payer type by service utilization', subtitle='Service utilizations sum to 1.00; this ver. better shows time trend within payer types') +
+	theme(axis.text.x=element_text(angle=60, hjust=1))
+```
+\pagebreak
+
 
 ## Share of service utilization by estimated median household income of residents in the patient's ZIP Code
+
+```{r prep inc heatmap}
+rows <- unique(sapply(inc_years, nrow))
+all_inc <- bind_rows(inc_years)
+all_inc$year <- rep(2006:2012, each=rows)
+inc_heat <- all_inc %>%
+	gather(inc, share, `Qrtl 1`:Missing) %>%
+	mutate(inc=factor(inc, levels=c('Qrtl 1', 'Qrtl 2', 'Qrtl 3', 'Qrtl 4', 'Missing'), labels=c('Quartile 1', 'Quartile 2', 'Quartile 3', 'Quartile 4', 'Missing'), ordered=TRUE),
+		service=factor(service, levels=rev(services), labels=rev(service_labels), ordered=TRUE))
+```
+
+```{r inc heatmap, include=TRUE}
+ggplot(inc_heat, aes(inc, service)) +
+	geom_tile(aes(fill=share)) +
+	facet_wrap(~year, nrow=3) +
+	scale_fill_gradientn(name='Prop.', colors=YlOrBr9, limits=c(0,1)) +
+	labs(x='', y='', title='Service utilization by estimated median household income of patient\'s zipcode', subtitle='rows sum to 1.00')
+
+ggplot(inc_heat, aes(year, service)) +
+	geom_tile(aes(fill=share)) +
+	facet_wrap(~inc, nrow=2) +
+	scale_x_continuous(breaks=seq(2006,2012,1)) +
+	scale_fill_gradientn(name='Prop.', colors=YlOrBr9, limits=c(0,1)) +
+	labs(x='', y='', title='Service utilization by estimated median household income of patient\'s zipcode', subtitle='Quartiles sum to 1.00; this ver. better shows time trend within income quartiles')
+```
