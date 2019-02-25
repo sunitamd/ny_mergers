@@ -235,10 +235,14 @@ for (i in 1:length(years)) {
 		)
 }
 ```
-\pagebreak
+\newpage
 
 
 # Heatmaps
+
+```{r fig size}
+knitr::opts_chunk$set(fig.width=12, fig.height=14)
+```
 
 ## Share of service utilization by payer types
 
@@ -257,8 +261,12 @@ ggplot(pay_heat, aes(payer, service)) +
 	geom_tile(aes(fill=share)) +
 	facet_wrap(~year, nrow=3) +
 	scale_fill_gradientn(name='Prop.', colors=YlOrBr9, limits=c(0,1)) +
-	labs(x='', y='', title='Service utilization by payer type', subtitle='rows sum to 1.00')
+	labs(x='', y='', title='Service utilization by payer type', subtitle='rows sum to 1.00') +
+	theme(axis.text.x=element_text(angle=60, hjust=1))
+```
+\newpage
 
+```{r pay heatmap2, include=TRUE}
 ggplot(pay_heat, aes(year, service)) +
 	geom_tile(aes(fill=share)) +
 	facet_wrap(~payer, nrow=2) +
@@ -288,7 +296,10 @@ ggplot(util_heat, aes(util, payer)) +
 	scale_fill_gradientn(name='Prop.', colors=YlOrBr9, limits=c(0,1)) +
 	labs(x='', y='', title='Payer type by service utilization', subtitle='rows sum to 1.00') +
 	theme(axis.text.x=element_text(angle=60, hjust=1))
+```
+\newpage
 
+```{r util heatmap2, include=TRUE}
 ggplot(util_heat, aes(year, payer)) +
 	geom_tile(aes(fill=share)) +
 	facet_wrap(~util, nrow=6) +
@@ -318,7 +329,10 @@ ggplot(inc_heat, aes(inc, service)) +
 	facet_wrap(~year, nrow=3) +
 	scale_fill_gradientn(name='Prop.', colors=YlOrBr9, limits=c(0,1)) +
 	labs(x='', y='', title='Service utilization by estimated median household income of patient\'s zipcode', subtitle='rows sum to 1.00')
+```
+\newpage
 
+```{r inc heatmap2, include=TRUE}
 ggplot(inc_heat, aes(year, service)) +
 	geom_tile(aes(fill=share)) +
 	facet_wrap(~inc, nrow=2) +
