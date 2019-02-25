@@ -30,15 +30,18 @@ local vars "key pstco hospstco ahaid year ayear pay1 zipinc_qrtl u_blood u_cath 
 
 log using "`log_file'", replace
 
+di in red "...reading in ny_sid_0612_supp data..."
 use "`proj_dir'/data_sidclean/sid_work/ny_sid_0612_supp.dta", clear
 
 keep `vars'
 
 if `sample' {
 	* Take 15% sample
+	di in red "...taking 15% random sample of data..."
 	sample 15
 }
 
+di in red "...compressing data..."
 compress
 
 * store utilization variables
@@ -46,6 +49,7 @@ qui lookfor u_
 local util_vars "`r(varlist)'"
 
 * Convert utilization variables into binary indicators
+di in red "...dichotomizing utilization variables..."
 foreach var of varlist `util_vars' {
 	gen i_`var' = 1 if `var'!=0
 }
@@ -55,6 +59,8 @@ save `all_data', replace
 
 ********************************************
 *  Utilization by payer type & year
+di in red "...calculating utilization share by payer type and year..."
+
 	qui lookfor i_u_
 	local util_vars_i "`r(varlist)'"
 
@@ -80,6 +86,8 @@ save `all_data', replace
 
 ********************************************
 * Payer type by utilization & year
+di in red "...calculating payer type shares by utilization services..."
+
 	use `all_data', clear
 
 	fcollapse (sum) `util_vars_i', by(year pay1) fast
@@ -106,6 +114,8 @@ save `all_data', replace
 
 ********************************************
 * Utilization by household income quartiles & year
+di in red  "...calculating utilization share by est. median zipcode household income quartiles..."
+
 	use `all_data', clear
 
 	fcollapse (sum) `util_vars_i', by(year zipinc_qrtl) fast
