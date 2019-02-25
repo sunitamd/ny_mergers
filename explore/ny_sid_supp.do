@@ -28,7 +28,7 @@ local vars "key pstco hospstco ahaid year ayear pay1 zipinc_qrtl u_blood u_cath 
 ********************************************
 * Read in NY SID Supplemental data
 
-log using "`log_file'"
+log using "`log_file'", replace
 
 use "`proj_dir'/data_sidclean/sid_work/ny_sid_0612_supp.dta", clear
 
