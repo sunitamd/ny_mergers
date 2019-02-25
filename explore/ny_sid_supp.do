@@ -19,7 +19,7 @@ local proj_dir "/gpfs/data/desailab/home/ny_mergers"
 local scratch_dir "/gpfs/scratch/azc211/ny_sid"
 
 * Filepaths
-local log_file_stub "`scratch_dir'/logs/ny_sid"
+local log_file "`scratch_dir'/logs/ny_sid.smcl"
 
 * Varlist
 local vars "key pstco hospstco ahaid year ayear pay1 zipinc_qrtl u_blood u_cath u_ccu u_chestxray u_ctscan u_dialysis u_echo u_ed u_eeg u_ekg u_epo u_icu u_lithotripsy u_mhsa u_mrt u_newbn2l u_newbn3l u_newbn4l u_nucmed u_observation u_occtherapy u_organacq u_othimplants u_pacemaker u_phytherapy u_radtherapy u_resptherapy u_speechtherapy u_stress u_ultrasound"
@@ -28,7 +28,7 @@ local vars "key pstco hospstco ahaid year ayear pay1 zipinc_qrtl u_blood u_cath 
 ********************************************
 * Read in NY SID Supplemental data
 
-log using "`log_file_stub'.smcl"
+log using "`log_file'"
 
 use "`proj_dir'/data_sidclean/sid_work/ny_sid_0612_supp.dta", clear
 
@@ -132,4 +132,3 @@ save `all_data', replace
 ********************************************
 * Close log
 log close
-log translate "`log_file_stub'.smcl" "`log_file_stub'.log"
