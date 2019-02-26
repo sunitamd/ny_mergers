@@ -60,7 +60,7 @@ years <- 2006:2012
 
 ## Share of service utilization by payer type
 
-- *Note:* Years broken into 3 tables, rows sum to 1.0 across 3 tables
+- *Note:* rows sum to 1.0
 
 ```{r prep pay}
 vars <- names(dat_pay)[grep('_pc$', names(dat_pay))]
@@ -119,7 +119,8 @@ for (i in 1:length(years)) {
 
 ## Share of payer types by service utilization
 
-- *Note:* rows sum to 1.0
+- *Note:* Years broken into 3 tables, rows sum to 1.0 across 3 tables
+
 
 ```{r prep util}
 vars <- names(dat_util)[grep('_pc$', names(dat_util))]
@@ -165,21 +166,21 @@ names(util_years) <- years
 for (i in 1:length(years)) {
 	year <- years[[i]]
 	tbl_temp <- util_years[[i]]
-	tbl_temp1 <- tbl_temp[, c(1:11)]
-	tbl_temp2 <- tbl_temp[, c(1,12:21)]
-	tbl_temp3 <- tbl_temp[, c(1,22:31)]
+	tbl_temp1 <- tbl_temp[, c(1:12)]
+	tbl_temp2 <- tbl_temp[, c(1,13:22)]
+	tbl_temp3 <- tbl_temp[, c(1,23:31)]
 	
 	print(kable(tbl_temp1, digits=2, caption=paste0('Payer types by service utilization, ', year, ' (1/3)'), col.names=names(tbl_temp1), format='latex', booktabs=TRUE) %>%
-		kable_styling(latex_options=c('HOLD_position', 'striped')) %>%
-		row_spec(0, angle=-45)
+		kable_styling(latex_options=c('HOLD_position', 'striped'), font_size=8) %>%
+		row_spec(0, angle=-45, font_size=6)
 		)
 	print(kable(tbl_temp2, digits=2, caption=paste0('Payer types by service utilization, ', year, ' (2/3)'), col.names=names(tbl_temp2), format='latex', booktabs=TRUE) %>%
-		kable_styling(latex_options=c('HOLD_position', 'striped')) %>%
-		row_spec(0, angle=-45)
+		kable_styling(latex_options=c('HOLD_position', 'striped'), font_size=8) %>%
+		row_spec(0, angle=-45, font_size=6)
 		)
-	print(kable(tbl_temp3, digits=2, caption=paste0('Payer types by service utilization, ', year, ' (3/3)'), col.names=names(tbl_temp2), format='latex', booktabs=TRUE) %>%
-		kable_styling(latex_options=c('HOLD_position', 'striped')) %>%
-		row_spec(0, angle=-45)
+	print(kable(tbl_temp3, digits=2, caption=paste0('Payer types by service utilization, ', year, ' (3/3)'), col.names=names(tbl_temp3), format='latex', booktabs=TRUE) %>%
+		kable_styling(latex_options=c('HOLD_position', 'striped'), font_size=8) %>%
+		row_spec(0, angle=-45, font_size=6)
 		)
 }
 ```
