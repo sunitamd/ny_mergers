@@ -22,7 +22,7 @@ theme_set(theme_bw())
 # NY Counties Shapefile
 ############################################
 # Shapefiles downloaded from: https://www.census.gov/geo/maps-data/data/cbf/cbf_counties.html
-us <- read_sf("mapping/shapefiles/cb_2017_us_county_20m/cb_2017_us_county_20m.shp")
+us <- read_sf("shapefiles/cb_2017_us_county_20m/cb_2017_us_county_20m.shp")
 ny <- us %>% filter(STATEFP=="36")
 # Set CRS to mercator
 ny <- st_transform(ny, crs=3857)

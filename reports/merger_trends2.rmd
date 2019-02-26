@@ -81,7 +81,7 @@ ggplot(temp_hhi, aes(year, hhi, linetype=factor(ny))) +
 
 ```{r map setup}
 # prep NY shapefile
-us_shp <- read_sf('mapping/shapefiles/cb_2017_us_county_20m/cb_2017_us_county_20m.shp')
+us_shp <- read_sf('shapefiles/cb_2017_us_county_20m/cb_2017_us_county_20m.shp')
 ny_shp <- us_shp %>%  filter(STATEFP=='36')
 ny_shp <- st_transform(ny_shp, crs=3857)
 
