@@ -12,8 +12,8 @@ Measuring the impact of hospital mergers in New York State on quality of, access
 	|   |-- explore     - exploratory data analysis
 	|   |-- analysis    - main analyses
 	|   |-- reports     - reports for internal meetings, communication
-	|   |-- outputs		- outputs (figures, tables, etc.) for external communication
+	|   |-- outputs	    - outputs (figures, tables, etc.) for external communication
 	|-- data
-	|   |-- raw			- raw data from external sources
-	|   |-- clean 		- cleaned data for reports, analyses, etc.
-	|   |-- inputs		- cleaned data from external sources
+	|   |-- raw	    - raw data from external sources
+	|   |-- clean       - cleaned data for reports, analyses, etc.
+	|   |-- inputs	    - cleaned data from external sources
