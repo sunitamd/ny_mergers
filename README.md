@@ -7,8 +7,8 @@ Measuring the impact of hospital mergers in New York State on quality of, access
 
 # Table of contents
 
-[Repository structure](#repository-structure)
-[Data](#data)
+[1. Repository structure](#repository-structure)  
+[2. Data](#data)
 
 
 # Repository structure
