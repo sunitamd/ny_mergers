@@ -28,7 +28,7 @@ Measuring the impact of hospital mergers in New York State on quality of, access
 	|   |-- inputs	    - cleaned data from external sources
 	|   |   |-- cooper  - Hospital merger dataset (Cooper et al.)
 	|   |   |-- mmc     - New York State county-level Medicaid enrollment (Orin Hasan)
-        |-- shapefiles
+    |-- shapefiles
  
 
 # Data
