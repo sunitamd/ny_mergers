@@ -26,7 +26,8 @@ Measuring the impact of hospital mergers in New York State on quality of, access
 	|   |   |-- HCUP NY SID SUPP
 	|   |-- clean       - cleaned data for reports, analyses, etc.
 	|   |-- inputs	    - cleaned data from external sources
-	|   |   |-- cooper
+	|   |   |-- cooper  - Hospital merger dataset (Cooper et al.)
+	|   |   |-- mmc     - New York State county-level Medicaid enrollment (Orin Hasan)
 
 
 # Data
