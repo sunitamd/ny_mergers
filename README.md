@@ -6,14 +6,14 @@ Measuring the impact of hospital mergers in New York State on quality of, access
 
 # Repository directory
 
-.  
-|-- *code*  
-|   |-- *prep*  
-|   |-- *explore*  
-|   |-- *analysis*  
-|   |-- *reports*  
-|   |-- *outputs*  
-|-- *data*  
-|   |-- *raw*  
-|   |-- *clean*  
-|   |-- *inputs*  
+	.  
+	|-- *code*  
+	|   |-- *prep*  
+	|   |-- *explore*  
+	|   |-- *analysis*  
+	|   |-- *reports*  
+	|   |-- *outputs*  
+	|-- *data*  
+	|   |-- *raw*  
+	|   |-- *clean*  
+	|   |-- *inputs*  
