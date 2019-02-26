@@ -2,11 +2,18 @@
 
 2019
 
-Impact of hospital mergers on low-income patients in New York State (2006-2012)
+Measuring the impact of hospital mergers in New York State on quality of, access to, and disparities in health care for low-income populations.
 
 # Repository directory
 
 .  
-|-        /*code* - code for analysis  
-|-        /*explore* - code for exploratory data analysis  
-|-        /*dump* - folder for transfering between cluster and local (git ignored)  
+|-- *code*  
+|   |-- *prep*  
+|   |-- *explore*  
+|   |-- *analysis*  
+|   |-- *reports*  
+|   |-- *outputs*  
+|-- *data*  
+|   |-- *raw*  
+|   |-- *clean*  
+|   |-- *inputs*  
