@@ -1,0 +1,347 @@
+---
+title: "NY HUCP Utilization Services Summary"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: pdf_document
+header-inlcudes:
+    - usepackage{amsmath}
+    - usepackage[document]{ragged2e}
+    - usepackage{float}
+urlcolor: red
+---
+
+
+```{r rmd_setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+knitr::opts_chunk$set(include=FALSE)
+knitr::opts_chunk$set(message=FALSE)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=80), tidy=TRUE)
+knitr::opts_knit$set(root.dir='..')
+```
+```{r libraries}
+library(haven)
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(RColorBrewer)
+```
+
+```{r plot settings}
+theme_set(theme_bw())
+
+YlOrBr9 <- brewer.pal(9, 'YlOrBr')
+```
+
+```{r functions}
+```
+
+```{r data}
+# Utilization by payer type
+dat_pay <- read_dta('dump/ny_sid_supp_pay.dta')
+# Payer type by utilization services
+dat_util <- read_dta('dump/ny_sid_supp_util.dta')
+# Utilization by household income quartiles
+dat_inc <- read_dta('dump/ny_sid_supp_inc.dta')
+
+service_values <- sort(unique(dat_util$service))
+service_labels <- c(
+	'Blood', 'Cardiac Cath. Lab', 'CCU', 'Chest XRay', 'CT Scan',
+	'Dialysis', 'Echo', 'Emer. Dept.', 'EEG', 'EKG', 'Erythropoietin',
+	'ICU', 'Lithotripsy', 'Mental Health/Sub. Abuse', 'MRT',
+	'Newborn 2', 'Newborn 3', 'Newborn 4', 'Nuclear Med.',
+	'Obs.', 'Occ. Therapy', 'Organ Acq.', 'Other Implants',
+	'Pacemaker', 'Phys. Therapy', 'Radiology/Chemo.', 'Resp. Therapy',
+	'Speech Therapy', 'Cardiac Stress', 'Ultrasound')
+years <- 2006:2012
+```
+
+# Tables
+
+
+## Share of service utilization by payer type
+
+- *Note:* rows sum to 1.0
+
+```{r prep pay}
+vars <- names(dat_pay)[grep('_pc$', names(dat_pay))]
+
+temp_pay <- dat_pay %>%
+	mutate(
+		payer=case_when(
+			pay1==1 ~ 'Medicare',
+			pay1==2 ~ 'Medicaid',
+			pay1==3 ~ 'Private ins.',
+			pay1==4 ~ 'Self-pay',
+			pay1==5 ~ 'No charge',
+			pay1==6 ~ 'Other'),
+		) %>%
+	arrange(year, pay1) %>%
+	select(year, payer, !!vars)
+
+# Format each year into separate table
+pay_years <- lapply(years, function(y, .data=temp_pay, .vars=vars) {
+	.temp <- .data %>%
+		filter(year==!!y) %>%
+		select(payer, !!.vars) %>%
+		t()
+
+	# Grep col & row names
+	payer_types <- .temp[1,]
+	services <- sub('_pc$', '', row.names(.temp[-1,]))
+	# Cast to tibble
+	.temp <- .temp[-1,] %>% as_tibble(rownames=NA)
+	# Set col names
+	names(.temp) <- payer_types
+	# Convert percentages to numeric
+	.temp <- mutate_all(.temp, .funs=as.numeric)
+	# Add utilization services
+	.temp <- mutate(.temp, service=!!services) %>%
+		mutate(service=factor(service, levels=service_values, labels=service_labels, ordered=TRUE)) %>%
+		select(service, everything())
+
+	return(.temp)
+})
+names(pay_years) <- years
+```
+
+```{r print pay, include=TRUE, results='asis'}
+for (i in 1:length(years)) {
+	year <- years[[i]]
+	tbl_temp <- pay_years[[i]]
+	
+	print(kable(tbl_temp, digits=2, caption=paste0('Service utilization by payer type, ', year), col.names=names(tbl_temp), format='latex', booktabs=TRUE) %>%
+		kable_styling(latex_options=c('HOLD_position', 'striped'))
+		)
+}
+```
+\pagebreak
+
+
+## Share of payer types by service utilization
+
+- *Note:* Years broken into 3 tables, rows sum to 1.0 across 3 tables
+
+
+```{r prep util}
+vars <- names(dat_util)[grep('_pc$', names(dat_util))]
+
+temp_util <- dat_util %>%
+	arrange(year, service_id) %>%
+	select(year, service, !!vars)
+
+# Format each year into separate table
+util_years <- lapply(years, function(y, .data=temp_util, .vars=vars) {
+	.temp <- .data %>%
+		filter(year==!!y) %>%
+		select(service, !!.vars) %>%
+		t()
+
+	# Grep col & row names
+	services <- .temp[1,]
+	payer_types <- sub('_pc$', '', row.names(.temp[-1,]))
+	# Cast to tibble
+	.temp <- .temp[-1,] %>% as_tibble(rownames=NA)
+	# Set col names
+	names(.temp) <- services
+	data.table::setnames(.temp, old=service_values, new=service_labels)
+	# Convert percentages to numeric
+	.temp <- mutate_all(.temp, .funs=as.numeric)
+	# Add payer types
+	.temp <- mutate(.temp, payer=!!payer_types) %>%
+		mutate(payer=case_when(
+			payer=='pay_1' ~ 'Medicare',
+			payer=='pay_2' ~ 'Medicaid',
+			payer=='pay_3' ~ 'Private ins.',
+			payer=='pay_4' ~ 'Self-pay',
+			payer=='pay_5' ~ 'No charge',
+			payer=='pay_6' ~ 'Other')) %>%
+		select(payer, everything())
+
+	return(.temp)
+})
+names(util_years) <- years
+```
+
+```{r print util, include=TRUE, results='asis'}
+for (i in 1:length(years)) {
+	year <- years[[i]]
+	tbl_temp <- util_years[[i]]
+	tbl_temp1 <- tbl_temp[, c(1:12)]
+	tbl_temp2 <- tbl_temp[, c(1,13:22)]
+	tbl_temp3 <- tbl_temp[, c(1,23:31)]
+	
+	print(kable(tbl_temp1, digits=2, caption=paste0('Payer types by service utilization, ', year, ' (1/3)'), col.names=names(tbl_temp1), format='latex', booktabs=TRUE) %>%
+		kable_styling(latex_options=c('HOLD_position', 'striped'), font_size=8) %>%
+		row_spec(0, angle=-45, font_size=6)
+		)
+	print(kable(tbl_temp2, digits=2, caption=paste0('Payer types by service utilization, ', year, ' (2/3)'), col.names=names(tbl_temp2), format='latex', booktabs=TRUE) %>%
+		kable_styling(latex_options=c('HOLD_position', 'striped'), font_size=8) %>%
+		row_spec(0, angle=-45, font_size=6)
+		)
+	print(kable(tbl_temp3, digits=2, caption=paste0('Payer types by service utilization, ', year, ' (3/3)'), col.names=names(tbl_temp3), format='latex', booktabs=TRUE) %>%
+		kable_styling(latex_options=c('HOLD_position', 'striped'), font_size=8) %>%
+		row_spec(0, angle=-45, font_size=6)
+		)
+}
+```
+\pagebreak
+
+
+## Share of service utilization by estimated median household income of residents in the patient's ZIP Code
+
+- *Note:* rows sum to 1.00.
+Dollar amounts for quartiles change annually, see [here](https://www.hcup-us.ahrq.gov/db/vars/siddistnote.jsp?var=zipinc_qrtl)
+
+```{r prep inc}
+vars <- names(dat_inc)[grep('_pc$', names(dat_inc))]
+
+temp_inc <- dat_inc %>%
+	mutate(zipinc_qrtl=case_when(
+		is.na(zipinc_qrtl) ~ 'Missing',
+		TRUE ~ paste0('Qrtl ', zipinc_qrtl))) %>%
+	arrange(year, zipinc_qrtl) %>%
+	select(year, zipinc_qrtl, !!vars)
+
+# Format each year into separate table
+inc_years <- lapply(years, function(y, .data=temp_inc, .vars=vars) {
+	.temp <- .data %>%
+		filter(year==!!y) %>%
+		select(zipinc_qrtl, !!.vars) %>%
+		t()
+
+	# Grep col & row names
+	inc_qrtls <- .temp[1,]
+	services <- sub('_pc$', '', row.names(.temp[-1,]))
+	# Cast to tibble
+	.temp <- .temp[-1,] %>% as_tibble(rownames=NA)
+	# Set col names
+	names(.temp) <- inc_qrtls
+	# Convert percentages to numeric
+	.temp <- mutate_all(.temp, .funs=as.numeric)
+	# Add utilization services
+	.temp <- mutate(.temp, service=!!services) %>%
+		mutate(service=factor(service, levels=service_values, labels=service_labels, ordered=TRUE)) %>%
+		select(service, everything()) %>%
+		select(-Missing, everything())
+
+	return(.temp)
+})
+names(inc_years) <- years
+```
+
+```{r print inc, include=TRUE, results='asis'}
+for (i in 1:length(years)) {
+	year <- years[[i]]
+	tbl_temp <- inc_years[[i]]
+	
+	print(kable(tbl_temp, digits=2, caption=paste0('Service utilization by est. median zipcode income quartile, ', year), col.names=names(tbl_temp), format='latex', booktabs=TRUE) %>%
+		kable_styling(latex_options=c('HOLD_position', 'striped'))
+		)
+}
+```
+\newpage
+
+
+# Heatmaps
+
+```{r fig size}
+knitr::opts_chunk$set(fig.width=12, fig.height=14)
+```
+
+## Share of service utilization by payer types
+
+```{r prep pay heatmap}
+rows <- unique(sapply(pay_years, nrow))
+all_pay <- bind_rows(pay_years)
+all_pay$year <- rep(2006:2012, each=rows)
+pay_heat <- all_pay %>%
+	gather(payer, share, Medicare:Other) %>%
+	mutate(payer=factor(payer, levels=c('Medicaid', 'Medicare', 'Private ins.', 'Self-pay', 'Other', 'No charge'), ordered=TRUE))
+```
+
+```{r pay heatmap, include=TRUE}
+ggplot(pay_heat, aes(payer, service)) +
+	geom_tile(aes(fill=share)) +
+	facet_wrap(~year, nrow=3) +
+	scale_y_discrete(limits=rev(levels(pay_heat$service))) +
+	scale_fill_gradientn(name='Prop.', colors=YlOrBr9, limits=c(0,1)) +
+	labs(x='', y='', title='Service utilization by payer type', subtitle='rows sum to 1.00') +
+	theme(axis.text.x=element_text(angle=60, hjust=1))
+```
+\newpage
+
+```{r pay heatmap2, include=TRUE}
+ggplot(pay_heat, aes(year, service)) +
+	geom_tile(aes(fill=share)) +
+	facet_wrap(~payer, nrow=2) +
+	scale_x_continuous(breaks=seq(2006,2012,1)) +
+	scale_y_discrete(limits=rev(levels(pay_heat$service))) +
+	scale_fill_gradientn(name='Prop.', colors=YlOrBr9, limits=c(0,1)) +
+	labs(x='', y='', title='Service utilization by payer type over time', subtitle='Payer types sum to 1.00; this ver. better shows time trend within payer types')
+```
+\pagebreak
+
+
+## Share of payer types by service utilization
+
+```{r prep util heatmap}
+rows <- unique(sapply(util_years, nrow))
+all_util <- bind_rows(util_years)
+all_util$year <- rep(2006:2012, each=rows)
+util_heat <- all_util %>%
+	gather(util, share, Blood:Ultrasound) %>%
+	mutate(payer=factor(payer, levels=c('Medicaid', 'Medicare', 'Private ins.', 'Self-pay', 'Other', 'No charge'), ordered=TRUE))
+```
+
+```{r util heatmap, include=TRUE}
+ggplot(util_heat, aes(util, payer)) +
+	geom_tile(aes(fill=share)) +
+	facet_wrap(~year, nrow=4) +
+	scale_fill_gradientn(name='Prop.', colors=YlOrBr9, limits=c(0,1)) +
+	labs(x='', y='', title='Payer type by service utilization', subtitle='rows sum to 1.00') +
+	theme(axis.text.x=element_text(angle=60, hjust=1))
+```
+\newpage
+
+```{r util heatmap2, include=TRUE}
+ggplot(util_heat, aes(year, payer)) +
+	geom_tile(aes(fill=share)) +
+	facet_wrap(~util, nrow=6) +
+	scale_x_continuous(breaks=seq(2006,2012,1)) +
+	scale_fill_gradientn(name='Prop.', colors=YlOrBr9, limits=c(0,1)) +
+	labs(x='', y='', title='Payer type by service utilization over time', subtitle='Service utilizations sum to 1.00; this ver. better shows time trend within payer types') +
+	theme(axis.text.x=element_text(angle=60, hjust=1))
+```
+\pagebreak
+
+
+## Share of service utilization by estimated median household income of residents in the patient's ZIP Code
+
+```{r prep inc heatmap}
+rows <- unique(sapply(inc_years, nrow))
+all_inc <- bind_rows(inc_years)
+all_inc$year <- rep(2006:2012, each=rows)
+inc_heat <- all_inc %>%
+	gather(inc, share, `Qrtl 1`:Missing) %>%
+	mutate(inc=factor(inc, levels=c('Qrtl 1', 'Qrtl 2', 'Qrtl 3', 'Qrtl 4', 'Missing'), labels=c('Quartile 1', 'Quartile 2', 'Quartile 3', 'Quartile 4', 'Missing'), ordered=TRUE))
+```
+
+```{r inc heatmap, include=TRUE}
+ggplot(inc_heat, aes(inc, service)) +
+	geom_tile(aes(fill=share)) +
+	facet_wrap(~year, nrow=3) +
+	scale_y_discrete(limits=rev(levels(inc_heat$service))) +
+	scale_fill_gradientn(name='Prop.', colors=YlOrBr9, limits=c(0,1)) +
+	labs(x='', y='', title='Service utilization by estimated median household income of patient\'s zipcode', subtitle='rows sum to 1.00')
+```
+\newpage
+
+```{r inc heatmap2, include=TRUE}
+ggplot(inc_heat, aes(year, service)) +
+	geom_tile(aes(fill=share)) +
+	facet_wrap(~inc, nrow=2) +
+	scale_x_continuous(breaks=seq(2006,2012,1)) +
+	scale_y_discrete(limits=rev(levels(inc_heat$service))) +
+	scale_fill_gradientn(name='Prop.', colors=YlOrBr9, limits=c(0,1)) +
+	labs(x='', y='', title='Service utilization by estimated median household income of patient\'s zipcode over time', subtitle='Quartiles sum to 1.00; this ver. better shows time trend within income quartiles')
+```

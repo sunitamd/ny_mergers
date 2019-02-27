@@ -1,0 +1,58 @@
+/*******************************************************************            
+* Unzip all .exe files in Mobaxterm
+* Owner: Sunita
+* Dates: 02/11/19-02/11-19                                  
+*************************************************************
+* 2006
+	cd /gpfs/data/desailab/home/orig_data/SID/NY_SID/2006/
+	unzip "NY_SIDC_2006_AHAL.exe"
+	unzip "NY_SIDC_2006_DX_PR_GRPS.exe"
+	unzip "NY_SIDC_2006_SEVERITY.exe"
+	unzip "NY_SIDC_2006_CHGS.exe"
+	unzip "NY_SIDC_2006_CORE.exe"
+	
+* 2007
+	cd /gpfs/data/desailab/home/orig_data/SID/NY_SID/2007/
+	unzip "NY_SIDC_2007_AHAL.exe"
+	unzip "NY_SIDC_2007_DX_PR_GRPS.exe"
+	unzip "NY_SIDC_2007_SEVERITY.exe"
+	unzip "NY_SIDC_2007_CHGS.exe"
+	unzip "NY_SIDC_2007_CORE.exe"
+	
+* 2008
+	cd /gpfs/data/desailab/home/orig_data/SID/NY_SID/2008/
+	unzip "NY_SIDC_2008_AHAL.exe"
+	unzip "NY_SIDC_2008_DX_PR_GRPS.exe"
+	unzip "NY_SIDC_2008_SEVERITY.exe"
+	unzip "NY_SIDC_2008_CHGS.exe"
+	unzip "NY_SIDC_2008_CORE.exe"
+	
+* 2009
+	cd /gpfs/data/desailab/home/orig_data/SID/NY_SID/2009/
+	unzip "NY_SIDC_2009_AHAL.exe"
+	unzip "NY_SIDC_2009_DX_PR_GRPS.exe"
+	unzip "NY_SIDC_2009_SEVERITY.exe"
+	unzip "NY_SIDC_2009_CHGS.exe"
+	unzip "NY_SIDC_2009_CORE.exe"
+	
+* 2010
+	cd /gpfs/data/desailab/home/orig_data/SID/NY_SID/2010/
+	unzip "NY_SIDC_2010_AHAL.exe"
+	unzip "NY_SIDC_2010_DX_PR_GRPS.exe"
+	unzip "NY_SIDC_2010_SEVERITY.exe"
+	unzip "NY_SIDC_2010_CHGS.exe"
+	unzip "NY_SIDC_2010_CORE.exe"
+	
+* 2011
+	cd /gpfs/data/desailab/home/orig_data/SID/NY_SID/2011/
+	unzip "ny_supplemental.7z"
+	unzip "NY_SIDC_2011_AHAL.exe"
+	unzip "NY_SIDC_2011_CORE.exe"
+	
+* 2012
+	cd /gpfs/data/desailab/home/orig_data/SID/NY_SID/2012/
+	unzip "NY_SIDC_2012_AHAL.exe"
+	unzip "NY_SIDC_2012_DX_PR_GRPS.exe"
+	unzip "NY_SIDC_2012_SEVERITY.exe"
+	unzip "NY_SIDC_2012_CHGS.exe"
+	unzip "NY_SIDC_2012_CORE.exe"

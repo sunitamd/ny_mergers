@@ -1,0 +1,38 @@
+/************************************* */
+/* HCUP Data: Preliminary data exploration*/
+/* PROGRAM CREATED BY: Desai  */
+/* LAST MODIFIED: Jan 23, 2019           */
+/************************************* */
+
+
+%let samp = samp;
+%let date = 012319;
+
+libname sid "/gpfs/data/desailab/home/ny_mergers/data/sid_work/";
+libname out "/disk/agedisk4/medicare.work/cutler-DUA28717/sunitamd-dua28717/Duals/Data/&pct.samp/vi";
+libname medvar "/disk/agedisk4/medicare.work/cutler-DUA28717/sunitamd-dua28717/medicarevar_&pct.pct";
+
+options mprint fullstimer replace;
+
+Hospital level - pay 1
+
+PROC SQL ;
+	CREATE TABLE pay_hosp as
+	SELECT 
+	sumpay1, pay2, ahaid, year
+	FROM 
+	sid.core_ahal_2006&samp.;
+	QUIT;
+	
+* Hospital-level data set;
+	* Payer - Percent w Medicaid as a payer; Percent w commercial as first payer; Medicare; Uninsured; Other;
+	* Zip code level income; 
+	* Race; 
+		
+	PROC SQL; 
+		CREATE TABLE nysid_hosp_level
+		AS SELECT 
+			SUM(CASE WHEN PAY1 = 2  THEN 1 ELSE 0 END) AS mcaid_num,
+			SUM(CASE WHEN (PAY1 = 1 AND PAY2 = 2) OR (PAY1 = 2 AND PAY2 = 1 ) THEN 1 ELSE 0 END) AS dual_num, 
+			SUM(CASE WHEN PAY1 = 3 THEN 1 ELSE 0 END) AS pvt_num,			
+	

@@ -1,0 +1,64 @@
+---
+title: "MMC Summary Statistics"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: pdf_document
+header-inlcudes:
+    - usepackage{amsmath}
+---
+
+
+```{r rmd_setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+knitr::opts_chunk$set(include=TRUE)
+knitr::opts_chunk$set(message=FALSE)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=60), tidy=TRUE)
+knitr::opts_knit$set(root.dir='..')
+```
+
+```{r libraries}
+library(haven)
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+
+theme_set(theme_bw())
+```
+
+```{r data}
+data <- read_dta('dump/mmc_summary_stats.dta')
+temp <- as.data.frame(t(data))
+names(temp) <- data$year
+
+change_enroll <- apply(temp[3:9, 1:9], 2, as.numeric)
+pct_enroll <- apply(temp[3:9, 10:18], 2, function(x) sprintf('%2.0f%%', as.numeric(x)))
+total_enroll <- apply(temp[3:9, 19:27], 2, as.numeric)
+
+rownames(change_enroll) <- rownames(temp)[3:9]
+rownames(pct_enroll) <- rownames(temp)[3:9]
+rownames(total_enroll) <- rownames(temp)[3:9]
+```
+
+*Note:* Report updated to exclude NYC counties
+
+# Average annual change in total enrollment across counties
+
+Change is with respect to previous year, hence NAs for 2004
+
+```{r table change in enrollment, include=TRUE}
+kable(change_enroll, digits=0, row.names=TRUE, booktabs=TRUE) %>%
+kable_styling(latex_options=c('hold_position', 'striped'))
+```
+
+## Average annual change (in pct.) in total enrollment across counties
+
+```{r table pct change, include=TRUE}
+kable(pct_enroll, digits=0, row.names=TRUE, booktabs=TRUE) %>%
+kable_styling(latex_options=c('hold_position', 'striped'))
+
+# Average annual total enrollment across counties
+
+```{r table total enrollmment, include=TRUE}
+kable(total_enroll, digits=0, row.names=TRUE, booktabs=TRUE) %>%
+kable_styling(latex_options=c('hold_position', 'striped'))
+```
