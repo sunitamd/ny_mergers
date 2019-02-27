@@ -65,6 +65,9 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp.dta", clear
 	drop ahaid_temp dshospid_temp sysid_coop_temp
 
 
+	save "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", replace
+
+
 ********************************************
 * Log close
 log close
