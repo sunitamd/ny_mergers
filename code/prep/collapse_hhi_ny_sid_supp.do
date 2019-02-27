@@ -50,7 +50,6 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp.dta", clear
 
 	* Encode string variables for fcollapse
 	encode ahaid, gen(ahaid_temp)
-	encode dshospid, gen(dshospid_temp)
 	encode sysid_coop, gen(sysid_coop_temp)
 	local by_vars "ahaid_temp sysid_coop_temp year"
 
@@ -60,9 +59,8 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp.dta", clear
 	fcollapse (mean) `bed_vars' `own_vars' `hhi_vars' `merger_vars' (sum) discharges `util_vars', by(`by_vars') fast
 
 	decode ahaid_temp, gen(ahaid)
-	decode dshospid_temp, gen(dshospid)
 	decode sysid_coop, gen(sysid_coop)
-	drop ahaid_temp dshospid_temp sysid_coop_temp
+	drop ahaid_temp sysid_coop_temp
 
 
 	save "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", replace
