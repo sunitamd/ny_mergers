@@ -27,10 +27,17 @@ log using "`log_file'", replace
 * Data
 use "`proj_dir'/data_hospclean/hhi_ny_sid_supp.dta", clear
 
+* Keep only matched merged results for now
+	keep if _merge==3
+
 * Prepare data for collapse to hospital-level
 	* Patient-level variables
 	gen discharges = 1
 
+	* collapse newborn utilizations
+	egen u_newbn = rowtotal(u_newbn*), missing
+	order u_newbn, before(u_newbn2l)
+	drop u_newbn2l u_newbn3l u_newbn4l
 	qui lookfor u_
 	local util_vars `r(varlist)'
 	* Dichotamize utilitization variables for summing
@@ -51,19 +58,69 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp.dta", clear
 	* Encode string variables for fcollapse
 	encode ahaid, gen(ahaid_temp)
 	encode sysid_coop, gen(sysid_coop_temp)
-	local by_vars "ahaid_temp sysid_coop_temp year"
+
+	local id_vars "ahaid_temp sysid_coop_temp year"
 
 ********************************************
 * Collapse data to hospital-year level
 
-	fcollapse (mean) `bed_vars' `own_vars' `hhi_vars' `merger_vars' (sum) discharges `util_vars', by(`by_vars') fast
+	fcollapse (mean) `bed_vars' `own_vars' `hhi_vars' `merger_vars' (sum) discharges `util_vars', by(`id_vars' pay1) fast
 
+	tempfile collapsed
+	save `collapsed', replace
+
+	* Save hospital-level variables
+	keep `bed_vars' `own_vars' `hhi_vars' `merger_vars' `id_vars'
+	duplicates drop `id_vars', force
+
+	tempfile hospital
+	save `hospital', replace
+
+	* Reshape patient-level variables wide by payer type
+	use `collapsed', clear
+
+	keep discharges pay1 `util_vars' `id_vars'
+
+	reshape wide `util_vars' discharges, i(`id_vars') j(pay1)
+
+	* Calculate discharge and utilization totals, medicaid, private insurance
+	foreach var in `util_vars' discharges {
+		* Capture payer type subtotals
+		qui lookfor `var'
+		local var_subtotals `r(varlist)'
+
+		egen `var' = rowtotal(`var_subtotals')
+		label var `var' "Total"
+		gen `var'_mda = `var'2
+		gen `var'_pri = `var'3
+
+		drop `var'1 `var'2 `var'3 `var'4 `var'5 `var'6
+	}
+
+	qui lookfor _mda
+	local vars `r(varlist)'
+	foreach var of local vars {
+		label var `var' "Medicaid subtotal"
+	}
+	qui lookfor _pri
+	local vars `r(varlist)'
+	foreach var of local vars {
+		label var `var' "Private insurance subtotal"
+	}
+
+	* Merge on hospital-level data
+	merge 1:1 `id_vars' using `hospital', assert(3) nogen
+
+	* Decode id vars
 	decode ahaid_temp, gen(ahaid)
 	decode sysid_coop, gen(sysid_coop)
 	drop ahaid_temp sysid_coop_temp
 
+	order ahaid sysid_coop year, first
+
 
 	save "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", replace
+	!chmod g+rw "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta"
 
 
 ********************************************
