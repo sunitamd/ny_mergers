@@ -4,15 +4,12 @@
 #SBATCH --cpus-per-task=2
 #SBATCH --mail-type=END
 #SBATCH --mail-user=alanzchen@nyu.edu
-#SBATCH --output=slurm/slurm_%j.out
 
 
 module load stata/15
 
-# RUNDIR=$scratch/slurm/run-${SLURM_JOB_ID/.*}
-# mkdir -p $RUNDIR
 
-PROJDIR=/gpfs/home/azc211/ny_mergers
+PROJDIR=/gpfs/home/$USER/ny_mergers
 
 
 # Command line  arguments
@@ -21,6 +18,6 @@ shift
 export ARGS=$@
 
 
-# Run job
+# Run program
 echo "$STATA_DO $ARGS"
 $STATA_DO $ARGS
