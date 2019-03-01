@@ -64,8 +64,9 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp.dta", clear
 	* Encode string variables for fcollapse
 		encode ahaid, gen(ahaid_temp)
 		encode sysid_coop, gen(sysid_coop_temp)
+		encode cnty, gen(cnty_temp)
 
-		local id_vars "ahaid_temp sysid_coop_temp year"
+		local id_vars "ahaid_temp sysid_coop_temp cnty year"
 
 ********************************************
 * Collapse data to hospital-year level
@@ -104,10 +105,11 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp.dta", clear
 
 	* Decode id vars
 		decode ahaid_temp, gen(ahaid)
-		decode sysid_coop, gen(sysid_coop)
-		drop ahaid_temp sysid_coop_temp
+		decode sysid_coop_temp, gen(sysid_coop)
+		decode cnty_temp, gen(cnty)
+		drop ahaid_temp sysid_coop_temp cnty_temp
 
-		order ahaid sysid_coop year, first
+		order ahaid sysid_coop cnty year, first
 
 
 	save "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", replace
