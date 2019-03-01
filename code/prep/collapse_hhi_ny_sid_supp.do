@@ -66,7 +66,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp.dta", clear
 		encode sysid_coop, gen(sysid_coop_temp)
 		encode cnty, gen(cnty_temp)
 
-		local id_vars "ahaid_temp sysid_coop_temp cnty year"
+		local id_vars "ahaid_temp sysid_coop_temp cnty_temp year"
 
 ********************************************
 * Collapse data to hospital-year level
