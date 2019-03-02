@@ -142,7 +142,7 @@ save "data_hospclean/hospmerger_ny_fin0210.dta", replace
 ****************************************
 * Collapse to market-level data set
 ****************************************
-use "data_hospclean/hospmerger_fin0210.dta", replace
+use "data_hospclean/hospmerger_fin0210.dta", clear
 	local mkt cnty
 	
 	collapse (max) anymerger=merger anytarget=target anyacquirer=acquirer (sum) nmerger=merger ntarget=target nacquirer=acquirer nhosps=one nadm=admtot2 n_admcare=mcrdc2 n_admcaid=mcddc2  (mean) avg_hhi_`mkt'=hhi_`mkt' avg_hhisys_`mkt'=hhisys_`mkt' numsys ,  by(`mkt' year )
