@@ -39,7 +39,7 @@ quietly {
 use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 
 	label var year ""
-	label var avg_hhisys_cnty "HHI (sys) (county-avg.)"
+	label var avg_hhisys_cnty "HHI (sys, cnty avg)"
 
 	********************************************
 	* Prep outcome variables
@@ -61,7 +61,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 			
 			local y_util_cnts
 			foreach var of local y_util_totals {
-				forvalues i=1/4 {
+				forvalues i=1/5 {
 					* Counts
 					local y_util_cnts "`y_util_cnts' `var'`i'"
 					* Proportions
@@ -70,6 +70,8 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 			}
 			qui ds u_*_pr
 			local y_util_props `r(varlist)'
+
+	save "dump/hhi_ny_sid_supp_hosp.dta", replace
 
 	********************************************
 	* Run models
@@ -118,7 +120,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 			foreach yvar of local y_util_cnts {
 				local model "m_`yvar'"
 				local title: word `i' of `pay_labels'
-				if `i'==4 {
+				if `i'==5 {
 					local i 1
 				}
 				else {
@@ -134,7 +136,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 				local i 1
 				foreach util of local util_medicaid {
 					local models
-					forvalues p=1/4 {
+					forvalues p=1/5 {
 						local models `models' m_`util'`p'
 					}
 					local title: word `i' of `util_medicaid_labels'
@@ -147,7 +149,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 				local i 1
 				foreach util of local util_privins {
 					local models
-					forvalues p=1/4 {
+					forvalues p=1/5 {
 						local models `models' m_`util'`p'
 					}
 					local title: word `i' of `util_privins_labels'
@@ -162,7 +164,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 			foreach yvar of local y_util_props {
 				local model "m_`yvar'"
 				local title: word `i' of `pay_labels'
-				if `i'==4 {
+				if `i'==5 {
 					local i 1
 				}
 				else {
@@ -178,7 +180,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 				local i 1
 				foreach util of local util_medicaid {
 					local models
-					forvalues p=1/4 {
+					forvalues p=1/5 {
 						local models `models' m_`util'`p'_pr
 					}
 					local title: word `i' of `util_medicaid_labels'
@@ -191,7 +193,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 				local i 1
 				foreach util of local util_privins {
 					local models
-					forvalues p=1/4 {
+					forvalues p=1/5 {
 						local models `models' m_`util'`p'_pr
 					}
 					local title: word `i' of `util_privins_labels'
