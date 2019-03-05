@@ -54,7 +54,7 @@ y_util_props <- paste0(y_util_cnts, '_pr')
 
 # Plot labels
 ############################################
-pay_labels <- c('Medicare', 'Medicaid', 'Private. Insurance', 'Self-pay', 'No Charge', 'Other', 'Missing')
+pay_labels <- c('Medicare', 'Medicaid', 'Private. Insurance', 'Self-pay', 'No Charge')
 pay_labels_util <-  rep(pay_labels, times=9)
 util_labels <- rep(c('Emergency Department', 'Mental Health/Substance Abuse', 'Newborn', 'Cardiac Cath. Lab', 'Nuclear Medicine', 'Observation', 'Organ Acquisition', 'Other Implants', 'Radiology/Chemotherapy'), each=5)
 
