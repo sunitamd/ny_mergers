@@ -1,11 +1,15 @@
 #!/bin/bash
+#SBATCH --partition=cpu_dev
+#SBATCH --time=4:00:00
+#SBATCH --mem=32GB
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=2
 #SBATCH --mail-type=END
 #SBATCH --mail-user=alanzchen@nyu.edu
+#SBATCH --output=/gpfs/scratch/$USER/slurm/slurm_%j.out
 
-
+module purge
 module load stata/15
 
 
