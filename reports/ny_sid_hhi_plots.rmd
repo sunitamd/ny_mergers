@@ -1,0 +1,135 @@
+---
+title: "NY SID Outcomes &  HHI Plots"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: pdf_document
+header-inlcudes:
+    - usepackage{amsmath}
+    - usepackage[document]{ragged2e}
+    - usepackage{float}
+urlcolor: red
+---
+
+
+```{r rmd_setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+knitr::opts_chunk$set(include=FALSE)
+knitr::opts_chunk$set(message=FALSE)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=80), tidy=TRUE)
+knitr::opts_knit$set(root.dir='..')
+```
+```{r libraries}
+library(haven)
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(RColorBrewer)
+```
+
+```{r plot settings}
+theme_set(theme_bw())
+```
+
+```{r functions}
+```
+
+```{r data}
+data <- read_dta('dump/hhi_ny_sid_supp_hosp.dta')
+
+
+# Prep outcomes
+############################################
+# discharge counts
+y_ds_cnts <- paste0('discharges', 1:5)
+# discharge proportions
+y_ds_props <-  paste0('discharges', 1:5, '_pr')
+
+# utilization totals
+utils <-  c('ed', 'mhsa', 'newbn', 'cath', 'nucmed', 'observation', 'organacq', 'othimplants', 'radtherapy')
+y_util_totals <- paste0(rep('u_', 9), utils)
+# utilization counts
+y_util_cnts <- paste0(rep(y_util_totals, each=5), 1:5)
+# utilization proportions
+y_util_props <- paste0(y_util_cnts, '_pr')
+
+# Plot labels
+############################################
+pay_labels <- c('Medicare', 'Medicaid', 'Private. Insurance', 'Self-pay', 'No Charge', 'Other', 'Missing')
+pay_labels_util <-  rep(pay_labels, times=9)
+util_labels <- rep(c('Emergency Department', 'Mental Health/Substance Abuse', 'Newborn', 'Cardiac Cath. Lab', 'Nuclear Medicine', 'Observation', 'Organ Acquisition', 'Other Implants', 'Radiology/Chemotherapy'), each=5)
+
+# Plots
+############################################
+# Discharges (counts)
+plots_ds_cnts <- lapply(seq(1:length(y_ds_cnts)), FUN=function(i) {
+	y <- y_ds_cnts[[i]]
+	pay_lab <- pay_labels[[i]]
+
+	ptemp <- ggplot(data, aes(x=avg_hhisys_cnty, y=get(y))) +
+		stat_summary_bin(fun.y='mean', bins=20, alpha=0.6, geom='point')  +
+		facet_wrap(~year, ncol=3) +
+		labs(x='HHI (sys, county-avg.)', y='Discharges', title='Discharges (counts)', subtitle=pay_lab)
+
+	return(ptemp)
+})
+
+# Discharges (proportions)
+plots_ds_props <- lapply(seq(1:length(y_ds_props)), FUN=function(i) {
+	y <- y_ds_props[[i]]
+	pay_lab <- pay_labels[[i]]
+
+	ptemp <- ggplot(data, aes(x=avg_hhisys_cnty, y=get(y))) +
+		stat_summary_bin(fun.y='mean', bins=20, alpha=0.6, geom='point') +
+		facet_wrap(~year, ncol=3) +
+		labs(x='HHI (sys, county-avg.)', y='Proportion', title='Discharges (proportion of all discharges)', subtitle=pay_lab)
+})
+
+############################################
+# Utilizations (counts)
+plots_util_cnts <- lapply(seq(1:length(y_util_cnts)), FUN=function(i) {
+	y <- y_util_cnts[[i]]
+	util_lab <- util_labels[[i]]
+	pay_lab <- pay_labels_util[[i]]
+
+	ptemp <- ggplot(data, aes(x=avg_hhisys_cnty, y=get(y))) +
+		stat_summary_bin(fun.y='mean', bins=20, alpha=0.6, geom='point')  +
+		facet_wrap(~year, ncol=3) +
+		labs(x='HHI (sys, county-avg.)', y='Service utilizations', title=paste0('Service utilizations (counts): ', util_lab), subtitle=pay_lab)
+
+	return(ptemp)
+})
+
+# Utilizations (proportions)
+plots_util_props <- lapply(seq(1:length(y_util_props)), FUN=function(i) {
+	y <- y_util_props[[i]]
+	util_lab <- util_labels[[i]]
+	pay_lab <- pay_labels_util[[i]]
+
+	ptemp <- ggplot(data, aes(x=avg_hhisys_cnty, y=get(y))) +
+		stat_summary_bin(fun.y='mean', bins=20, alpha=0.6, geom='point') +
+		facet_wrap(~year, ncol=3) +
+		labs(x='HHI (sys, county-avg.)', y='Service utilizations', title=paste0('Service utilizations (props.): ', util_lab), subtitle=pay_lab)
+
+	return(ptemp)
+})
+```
+
+# Discharges (counts)
+```{r, include=TRUE, message=FALSE}
+plots_ds_cnts
+```
+
+# Discharges (proportions)
+```{r, include=TRUE, message=FALSE}
+plots_ds_props
+```
+
+# Service utilizations (counts)
+```{r, include=TRUE, message=FALSE}
+plots_util_cnts
+```
+
+# Service utilizations (proportions)
+```{r, include=TRUE, message=FALSE}
+plots_util_props
+```
