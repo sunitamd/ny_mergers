@@ -1,0 +1,169 @@
+---
+title: "NY SID: Exploration of discharges and select utilization flags"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: pdf_document
+header-inlcudes:
+    - usepackage{amsmath}
+    - usepackage[document]{ragged2e}
+    - usepackage{float}
+urlcolor: red
+---
+
+
+```{r rmd_setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+knitr::opts_chunk$set(include=FALSE)
+knitr::opts_chunk$set(message=FALSE)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=80), tidy=TRUE)
+knitr::opts_knit$set(root.dir='..')
+```
+```{r libraries}
+library(haven)
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(RColorBrewer)
+```
+
+```{r plot settings}
+theme_set(theme_bw())
+
+qual5 <- brewer.pal(5, 'Set2')
+```
+
+```{r functions}
+############################################
+sumStatsOutcome <- function(outcome, .data=data) {
+	# Calculate summary statistics for one outcome by year for all payer types
+
+	.data %>%
+		select(year, !!outcome) %>%
+		group_by(year) %>%
+			summarise_at(.vars=vars(-group_cols()),
+				.funs=list(
+					mean=~mean(., na.rm=TRUE),
+					sd=~sd(., na.rm=TRUE),
+					q1=~quantile(., 0.25, na.rm=TRUE),
+					q2=~quantile(., 0.50, na.rm=TRUE),
+					q3=~quantile(., 0.75, na.rm=TRUE),
+					min=~min(., na.rm=TRUE),
+					max=~max(., na.rm=TRUE),
+					NAs=~sum(is.na(.)))) %>%
+			ungroup()
+}
+
+
+############################################
+kblSummaryStats <- function(outcome, payer, sum_stats, ...) {
+	# Kable output of summary statistics for one payer type for outcome
+
+	if (all(grepl('_pr$', outcome))) {
+		outcome_stub <- paste0(unique(gsub('[[:digit:]]_pr', '', outcome)), payer, '_pr_')
+	} else {
+		outcome_stub <- paste0(unique(gsub('[[:digit:]]', '', outcome)), payer, '_')
+	}
+
+	# Transpose tibble
+	temp <- sum_stats %>%
+		select(year, starts_with(outcome_stub)) %>%
+		t()
+	colnames(temp) <- temp[1,]
+	rownames(temp) <- gsub(outcome_stub, '', rownames(temp))
+	tbl_temp <- as.data.frame(temp[-1,])
+
+	kable(tbl_temp, format='latex', booktabs=TRUE, ...) %>%
+		kable_styling(latex_options=c('HOLD_position', 'striped'))
+}
+
+############################################
+binScatter <- function(outcome, .data=data, geom='line', ylab, title) {
+	# Scatter outcome vs binned HHI
+
+	temp <- .data %>%
+		select(year, bdtot, !!outcome) %>%
+		gather(payer, y, !!outcome)
+
+	ggplot(temp, aes(x=bdtot, y=y, col=payer)) +
+		stat_summary_bin(fun.y='mean', na.rm=TRUE, bins=20
+			, geom=geom) +
+		scale_color_manual('Payer type', values=qual5, labels=c('Medicare', 'Medicaid', 'Private Insurance', 'Self-Pay', 'No charge')) +
+		facet_wrap(~year, ncol=3) +
+		labs(x='Beds', y=ylab, title=title) +
+		theme(axis.text.x=element_text(size=6), axis.text.y=element_text(size=6),
+			strip.text.x=element_text(size=6, margin=margin(t=0.6, b=0.6)),
+			legend.title=element_text(size=6), legend.text=element_text(size=6), legend.key.size=unit(.5, 'line'), legend.position=c(.5, .15))
+}
+```
+
+```{r data prep}
+data <- read_dta('dump/hhi_ny_sid_supp_hosp.dta')
+
+############################################
+# Payer type labels
+pay_labels <- c('Medicare', 'Medicaid', 'Private Insurance', 'Self-Pay', 'No charge')
+
+# Outcome variables
+ds_cnts <- paste0('discharges', 1:5)
+ds_prs <- paste0(ds_cnts, '_pr')
+ed_cnts <- paste0('u_ed', 1:5)
+ed_prs <- paste0(ed_cnts, '_pr')
+mhsa_cnts <- paste0('u_mhsa', 1:5)
+mhsa_prs <- paste0(mhsa_cnts, '_pr')
+newbn_cnts <- paste0('u_newbn', 1:5)
+newbn_prs <- paste0(newbn_cnts, '_pr')
+
+############################################
+# Outcome labels
+outcomes <- list(ds_cnts, ds_prs, ed_cnts, ed_prs, mhsa_cnts, mhsa_prs, newbn_cnts, newbn_prs)
+outcome_summaries <- lapply(outcomes, sumStatsOutcome)
+```
+
+# Table of contents
+
+# Exploration of NY SID outcomes
+
+## Distributions of outcomes by year
+
+## Summary statistics of outcomes
+
+*Note:* in all tables, unit of analysis is at hospital level
+
+```{r summary statistics, include=TRUE, results='asis'}
+outcome_digits <- rep(c(0,2), times=length(outcomes)/2)
+outcome_captions <- c('Discharges (counts)', 'Discharges (prop.)', 'Emergency Dept. (counts)', 'Emergency Dept. (prop.)', 'Mental Health/Substance Abuse (counts)', 'Mental Health/Substance Abuse (prop.)', 'Newborn (counts)', 'Newborn (prop.)')
+
+# Loop through outcomes
+for (i in 1:length(outcomes)) {
+	outcome <- outcomes[[i]]
+	sum_stats <- outcome_summaries[[i]]
+	digits <- outcome_digits[[i]]
+	
+	# Loop through payer types
+	for (pay in 1:5) {
+		caption <- paste0(outcome_captions[[i]], ' - ', pay_labels[[pay]])
+		print(kblSummaryStats(outcome, pay, sum_stats, digits=digits, caption=caption))
+	}
+}
+```
+
+## Scatterplots of outcomes vs beds
+
+*Note:* in all plots, beds are binned (bins=20) on the x-axis
+
+```{r, include=TRUE, results='asis', message=FALSE}
+outcome_ylabs <- rep(c('Counts', 'Prop.'), times=length(outcomes)/2)
+outcome_titles <- c('Discharges (counts)', 'Discharges (prop.)', 'Emergency Dept. (counts)', 'Emergency Dept. (prop.)', 'Mental Health/Substance Abuse (counts)', 'Mental Health/Substance Abuse (prop.)', 'Newborn (counts)', 'Newborn (prop.)')
+
+# Loop through outcomes
+for (i in 1:length(outcomes)) {
+	outcome <- outcomes[[i]]
+	ylab <- outcome_ylabs[[i]]
+	title <- outcome_titles[[i]]
+
+	print(binScatter(outcome, ylab=ylab, title=title))
+}
+```
+
+
+# Distribution of DRG codes within service utilization flags
