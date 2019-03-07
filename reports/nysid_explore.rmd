@@ -2,11 +2,10 @@
 title: "NY SID: Exploration of discharges and select utilization flags"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output: pdf_document
+linkcolor: blue
 header-inlcudes:
     - usepackage{amsmath}
-    - usepackage[document]{ragged2e}
     - usepackage{float}
-urlcolor: red
 ---
 
 
@@ -113,20 +112,49 @@ mhsa_prs <- paste0(mhsa_cnts, '_pr')
 newbn_cnts <- paste0('u_newbn', 1:5)
 newbn_prs <- paste0(newbn_cnts, '_pr')
 
-############################################
-# Outcome labels
 outcomes <- list(ds_cnts, ds_prs, ed_cnts, ed_prs, mhsa_cnts, mhsa_prs, newbn_cnts, newbn_prs)
-outcome_summaries <- lapply(outcomes, sumStatsOutcome)
 ```
+
 
 # Table of contents
 
+1. [Exploration of NY SID outcomes](#exploration-of-ny-sid-outcomes)
+	a. [Distributions of outcomes by year](#distributions-of-outcomes-by-year)
+	b. [Summary statistics of outcomes](#summary-statistics-of-outcomes)
+	c. [Scatterplots of outcomes vs beds](#scatterplots-of-outcomes-vs-beds)
+2. [Distribution of DRG codes within service utilization flags](#distribution-of-drg-codes-within-service-utilization-flags)
+
+
+
 # Exploration of NY SID outcomes
 
+
 ## Distributions of outcomes by year
+*Note:* unit of analysis is at hospital level
+
+```{r outcome distributions, include=TRUE, results='asis', message=FALSE}
+outcome_titles <- c('Discharges (counts)', 'Discharges (prop.)', 'Emergency Dept. (counts)', 'Emergency Dept. (prop.)', 'Mental Health/Substance Abuse (counts)', 'Mental Health/Substance Abuse (prop.)', 'Newborn (counts)', 'Newborn (prop.)')
+
+# Loop through outcomes
+for (i in 1:length(outcomes)) {
+	outcome <- outcomes[[i]]
+
+	# Loop through payer types
+	for (pay in 1:5) {
+		y <- outcome[[pay]]
+		title <- paste0('Histogram of ', outcome_titles[[i]], ' - ', pay_labels[[pay]])
+
+		print(ggplot(data, aes(get(y))) +
+			geom_histogram(bins=20, na.rm=TRUE, col='black', fill='grey80') +
+			facet_wrap(~year, ncol=3) +
+			labs(x='', y='', title=title) +
+			theme(strip.text.x=element_text(size=6, margin=margin(t=0.6, b=0.6))))
+	}
+}
+```
+
 
 ## Summary statistics of outcomes
-
 *Note:* in all tables, unit of analysis is at hospital level
 
 ```{r summary statistics, include=TRUE, results='asis'}
@@ -134,6 +162,8 @@ outcome_digits <- rep(c(0,2), times=length(outcomes)/2)
 outcome_captions <- c('Discharges (counts)', 'Discharges (prop.)', 'Emergency Dept. (counts)', 'Emergency Dept. (prop.)', 'Mental Health/Substance Abuse (counts)', 'Mental Health/Substance Abuse (prop.)', 'Newborn (counts)', 'Newborn (prop.)')
 
 # Loop through outcomes
+outcome_summaries <- lapply(outcomes, sumStatsOutcome)
+
 for (i in 1:length(outcomes)) {
 	outcome <- outcomes[[i]]
 	sum_stats <- outcome_summaries[[i]]
@@ -147,11 +177,11 @@ for (i in 1:length(outcomes)) {
 }
 ```
 
-## Scatterplots of outcomes vs beds
 
+## Scatterplots of outcomes vs beds
 *Note:* in all plots, beds are binned (bins=20) on the x-axis
 
-```{r, include=TRUE, results='asis', message=FALSE}
+```{r scatter outcomes, include=TRUE, results='asis', message=FALSE, fig.fullwidth=TRUE}
 outcome_ylabs <- rep(c('Counts', 'Prop.'), times=length(outcomes)/2)
 outcome_titles <- c('Discharges (counts)', 'Discharges (prop.)', 'Emergency Dept. (counts)', 'Emergency Dept. (prop.)', 'Mental Health/Substance Abuse (counts)', 'Mental Health/Substance Abuse (prop.)', 'Newborn (counts)', 'Newborn (prop.)')
 
