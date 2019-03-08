@@ -102,7 +102,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 				local title: word `i' of `pay_labels'
 				local ++i
 
-				qui xtreg `yvar' `xvars', fe
+				qui xtreg `yvar' `xvars', fe vce(cluster ahaid_id)
 				estimates store `model', title(`title')
 			}
 			noisily estout `models', title(Discharges (counts)) cells(b(star fmt(1)) se(par fmt(1))) legend label varlabels(_cons Constant)
@@ -117,7 +117,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 				local title: word `i' of `pay_labels'
 				local ++i
 
-				qui xtreg `yvar' `xvars', fe
+				qui xtreg `yvar' `xvars', fe vce(cluster ahaid_id)
 				estimates store `model', title(`title')
 			}
 			* Output model estimates
