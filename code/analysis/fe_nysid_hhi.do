@@ -29,6 +29,10 @@ local util_medicaid_labels `""Emergency Department" "Mental Health/Substance Abu
 local util_privins "u_cath u_nucmed u_observation u_organacq u_othimplants u_radtherapy"
 local util_privins_labels `""Cardiac Cath. Lab" "Nuclear Medicine" "Observation" "Organ Acquisition" "Other implants" "Radiology/Chemotherapy""'
 
+* Model settings
+local xvars "avg_hhisys_cnty_T i.year"
+local panelvar ahaid
+
 
 ********************************************
 * Log start
@@ -82,13 +86,30 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 			qui ds u_*_pr
 			local y_util_props `r(varlist)'
 
+	********************************************
+	* Bin average county system HHI into terciles
+		_pctile avg_hhisys_cnty if year == 2006, nquantiles(3)
+		local q1 = `r(r1)'
+		local q2 = `r(r2)'
+
+		assert avg_hhisys_cnty != .
+		gen avg_hhisys_cnty_T = 1 if avg_hhisys_cnty <= `q1'
+		replace avg_hhisys_cnty_T = 2 if avg_hhisys_cnty > `q1' & avg_hhisys_cnty <= `q2'
+		replace avg_hhisys_cnty_T = 3 if avg_hhisys_cnty > `q2'
+		assert avg_hhisys_cnty_T != .
+		label var avg_hhisys_cnty_T "Cnty avg. HHI sys tercile"
+
+		noisily di in red "* * * avg_hhisys_cnty terciles for 2006 * * "
+		noisily di in red "... Tercile 1: " %6.3f `q1'
+		noisily di in red "... Tercile 2: " %6.3f `q2'
+
+	* Save data in dump for scp to local
 	save "dump/hhi_ny_sid_supp_hosp.dta", replace
 
 	********************************************
 	* Run models
-		local xvars "avg_hhisys_cnty i.year"
-		encode ahaid, gen(ahaid_id)
-		xtset ahaid_id year, yearly
+		encode `panelvar', gen(`panelvar'_id)
+		xtset `panelvar' year, yearly
 
 		********************************************
 		* Discharge models
@@ -102,7 +123,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 				local title: word `i' of `pay_labels'
 				local ++i
 
-				qui xtreg `yvar' `xvars', fe vce(cluster ahaid_id)
+				qui xtreg `yvar' `xvars', fe vce(cluster `panelvar')
 				estimates store `model', title(`title')
 			}
 			noisily estout `models', title(Discharges (counts)) cells(b(star fmt(1)) se(par fmt(1))) legend label varlabels(_cons Constant)
@@ -117,7 +138,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 				local title: word `i' of `pay_labels'
 				local ++i
 
-				qui xtreg `yvar' `xvars', fe vce(cluster ahaid_id)
+				qui xtreg `yvar' `xvars', fe vce(cluster `panelvar')
 				estimates store `model', title(`title')
 			}
 			* Output model estimates
@@ -138,7 +159,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 					local ++i
 				}
 
-				qui xtreg `yvar' `xvars', fe
+				qui xtreg `yvar' `xvars', fe vce(cluster `panelvar')
 				estimates store `model', title(`title')
 			}
 			* Output model estimates
@@ -182,7 +203,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 					local ++i
 				}
 
-				qui xtreg `yvar' `xvars', fe
+				qui xtreg `yvar' `xvars', fe vce(cluster `panelvar')
 				estimates store `model', title(`title')
 			}
 			* Output model estimates
