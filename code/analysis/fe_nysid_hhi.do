@@ -30,7 +30,7 @@ local util_privins "u_cath u_nucmed u_observation u_organacq u_othimplants u_rad
 local util_privins_labels `""Cardiac Cath. Lab" "Nuclear Medicine" "Observation" "Organ Acquisition" "Other implants" "Radiology/Chemotherapy""'
 
 * Model settings
-local xvars "avg_hhisys_cnty_T i.year"
+local xvars "i.avg_hhisys_cnty_T i.year"
 local panelvar ahaid
 local panelvar_id "`panelvar'_id"
 
