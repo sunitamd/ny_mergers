@@ -194,6 +194,3 @@ for (i in 1:length(outcomes)) {
 	print(binScatter(outcome, ylab=ylab, title=title))
 }
 ```
-
-
-# Distribution of DRG codes within service utilization flags
