@@ -51,7 +51,12 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 			* Proportions
 			foreach var of local y_ds_cnts {
 				gen `var'_pr = `var' / discharges
+
+				* Generate log outcomes for counts
+				gen `var'_lg = log(`var')
 			}
+			qui ds discharges*_lg
+			local y_ds_logs `r(varlist)'
 			qui ds discharges*_pr
 			local y_ds_props `r(varlist)'
 
@@ -64,10 +69,16 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 				forvalues i=1/5 {
 					* Counts
 					local y_util_cnts "`y_util_cnts' `var'`i'"
+					
 					* Proportions
 					gen `var'`i'_pr = `var'`i' / `var'
+
+					* Generate log outcomes for counts
+					gen `var'_`i'_lg = log(`var'`i')
 				}
 			}
+			qui ds u_*_lg
+			local y_util_logs `r(varlist)'
 			qui ds u_*_pr
 			local y_util_props `r(varlist)'
 
@@ -85,7 +96,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 			* Discharge counts
 			local models
 			local i 1
-			foreach yvar of local y_ds_cnts {
+			foreach yvar of local y_ds_logs {
 				local model "m_`yvar'"
 				local models `models' `model'
 				local title: word `i' of `pay_labels'
@@ -117,7 +128,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 		noisily di in red "* * * SERVICE UTILIZATIONS * * *"
 			* Utilization counts
 			local i 1
-			foreach yvar of local y_util_cnts {
+			foreach yvar of local y_util_logs {
 				local model "m_`yvar'"
 				local title: word `i' of `pay_labels'
 				if `i'==5 {
