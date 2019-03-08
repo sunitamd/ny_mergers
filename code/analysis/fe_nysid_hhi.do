@@ -18,7 +18,7 @@ local today: di %tdCCYYNNDD date(c(current_date), "DMY")
 
 * Filepaths
 local log_file "`scratch_dir'/logs/fe_util_hhi_`today'.smcl"
-local log_file_pdf "dump/fe_util_hhi_`today'.pdf"
+local log_file_pdf "reports/fe_util_hhi.pdf"
 
 * Labels and misc.
 local pay_labels `""Medicare" "Medicaid" "PrivIns" "SelfPay" "NoCharge" "Other" "Missing""'
@@ -128,7 +128,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 				qui xtreg `yvar' `xvars', fe vce(cluster `panelvar_id')
 				estimates store `model', title(`title')
 			}
-			noisily estout `models', title(Discharges (log counts)) cells(b(star fmt(1)) se(par fmt(1))) legend label varlabels(_cons Constant)
+			noisily estout `models', title(Discharges (log counts)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
 
 
 			* Discharge proportions
@@ -176,22 +176,11 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 					local title: word `i' of `util_medicaid_labels'
 					local ++i
 
-					noisily estout `models', title(Medicaid Service Util: `title' (log counts)) cells(b(star fmt(1)) se(par fmt(1))) legend label varlabels(_cons Constant)
+					noisily estout `models', title(Medicaid Service Util: `title' (log counts)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
 				}
 				* Private insurance services
 				noisily di in red ". . . Private insurance services . . ."
-				local i 1
-				foreach util of local util_privins {
-					local models
-					forvalues p=1/5 {
-						local models `models' m_`util'`p'_lg
-					}
-					local title: word `i' of `util_privins_labels'
-					local ++i
-
-					noisily estout `models', title(Private Insurance Service Util: `title' (counts)) cells(b(star fmt(1)) se(par fmt(1))) legend label varlabels(_cons Constant)
-
-				}
+				ç
 
 			* Utiliztion proportions
 			local i 1
