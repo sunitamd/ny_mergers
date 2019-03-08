@@ -32,6 +32,8 @@ local util_privins_labels `""Cardiac Cath. Lab" "Nuclear Medicine" "Observation"
 * Model settings
 local xvars "avg_hhisys_cnty_T i.year"
 local panelvar ahaid
+local panelvar_id "`panelvar'_id"
+
 
 
 ********************************************
@@ -108,8 +110,8 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 
 	********************************************
 	* Run models
-		encode `panelvar', gen(`panelvar'_id)
-		xtset `panelvar' year, yearly
+		encode `panelvar', gen(`panelvar_id')
+		xtset `panelvar_id' year, yearly
 
 		********************************************
 		* Discharge models
@@ -123,7 +125,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 				local title: word `i' of `pay_labels'
 				local ++i
 
-				qui xtreg `yvar' `xvars', fe vce(cluster `panelvar')
+				qui xtreg `yvar' `xvars', fe vce(cluster `panelvar_id')
 				estimates store `model', title(`title')
 			}
 			noisily estout `models', title(Discharges (counts)) cells(b(star fmt(1)) se(par fmt(1))) legend label varlabels(_cons Constant)
@@ -138,7 +140,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 				local title: word `i' of `pay_labels'
 				local ++i
 
-				qui xtreg `yvar' `xvars', fe vce(cluster `panelvar')
+				qui xtreg `yvar' `xvars', fe vce(cluster `panelvar_id')
 				estimates store `model', title(`title')
 			}
 			* Output model estimates
@@ -159,7 +161,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 					local ++i
 				}
 
-				qui xtreg `yvar' `xvars', fe vce(cluster `panelvar')
+				qui xtreg `yvar' `xvars', fe vce(cluster `panelvar_id')
 				estimates store `model', title(`title')
 			}
 			* Output model estimates
@@ -203,7 +205,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 					local ++i
 				}
 
-				qui xtreg `yvar' `xvars', fe vce(cluster `panelvar')
+				qui xtreg `yvar' `xvars', fe vce(cluster `panelvar_id')
 				estimates store `model', title(`title')
 			}
 			* Output model estimates
