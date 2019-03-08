@@ -80,7 +80,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 					gen `var'`i'_pr = `var'`i' / `var'
 
 					* Generate log outcomes for counts
-					gen `var'_`i'_lg = log(`var'`i' + 1)
+					gen `var'`i'_lg = log(`var'`i' + 1)
 				}
 			}
 			qui ds u_*_lg
@@ -171,7 +171,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 				foreach util of local util_medicaid {
 					local models
 					forvalues p=1/5 {
-						local models `models' m_`util'`p'
+						local models `models' m_`util'`p'_lg
 					}
 					local title: word `i' of `util_medicaid_labels'
 					local ++i
@@ -184,7 +184,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 				foreach util of local util_privins {
 					local models
 					forvalues p=1/5 {
-						local models `models' m_`util'`p'
+						local models `models' m_`util'`p'_lg
 					}
 					local title: word `i' of `util_privins_labels'
 					local ++i
