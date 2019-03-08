@@ -59,7 +59,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 				gen `var'_pr = `var' / discharges
 
 				* Generate log outcomes for counts
-				gen `var'_lg = log(`var')
+				gen `var'_lg = log(`var' + 1)
 			}
 			qui ds discharges*_lg
 			local y_ds_logs `r(varlist)'
@@ -80,7 +80,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 					gen `var'`i'_pr = `var'`i' / `var'
 
 					* Generate log outcomes for counts
-					gen `var'_`i'_lg = log(`var'`i')
+					gen `var'_`i'_lg = log(`var'`i' + 1)
 				}
 			}
 			qui ds u_*_lg
