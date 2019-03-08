@@ -128,7 +128,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 				qui xtreg `yvar' `xvars', fe vce(cluster `panelvar_id')
 				estimates store `model', title(`title')
 			}
-			noisily estout `models', title(Discharges (counts)) cells(b(star fmt(1)) se(par fmt(1))) legend label varlabels(_cons Constant)
+			noisily estout `models', title(Discharges (log counts)) cells(b(star fmt(1)) se(par fmt(1))) legend label varlabels(_cons Constant)
 
 
 			* Discharge proportions
@@ -176,7 +176,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 					local title: word `i' of `util_medicaid_labels'
 					local ++i
 
-					noisily estout `models', title(Medicaid Service Util: `title' (counts)) cells(b(star fmt(1)) se(par fmt(1))) legend label varlabels(_cons Constant)
+					noisily estout `models', title(Medicaid Service Util: `title' (log counts)) cells(b(star fmt(1)) se(par fmt(1))) legend label varlabels(_cons Constant)
 				}
 				* Private insurance services
 				noisily di in red ". . . Private insurance services . . ."
