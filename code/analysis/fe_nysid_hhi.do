@@ -116,7 +116,8 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 		********************************************
 		* Discharge models
 		noisily di in red "* * * DISCHARGES * * *"
-			* Discharge counts
+			********************************************
+			* Discharge log counts
 			local models
 			local i 1
 			foreach yvar of local y_ds_logs {
@@ -130,7 +131,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 			}
 			noisily estout `models', title(Discharges (log counts)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
 
-
+			********************************************
 			* Discharge proportions
 			local models
 			local i 1
@@ -146,10 +147,13 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 			* Output model estimates
 			noisily estout `models', title(Discharges (proportions)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
 
+
 		********************************************
 		* Service utilization models
+		********************************************
 		noisily di in red "* * * SERVICE UTILIZATIONS * * *"
-			* Utilization counts
+			********************************************
+			* Utilization log counts
 			local i 1
 			foreach yvar of local y_util_logs {
 				local model "m_`yvar'"
@@ -180,8 +184,19 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 				}
 				* Private insurance services
 				noisily di in red ". . . Private insurance services . . ."
-				ç
+				local i 1
+				foreach util of local util_privins {
+					local models
+					forvalues p=1/5 {
+						local models `models' m_`util'`p'_lg
+					}
+					local title: word `i' of `util_privins_labels'
+					local ++i
 
+					noisily estout `models', title(Private Insurance Service Util: `title' (log counts)) cell(b(star fmt(2)) se(par fmt(2)))  legend label varlabels(_cons Constant)
+				}
+
+			********************************************
 			* Utiliztion proportions
 			local i 1
 			foreach yvar of local y_util_props {
@@ -224,6 +239,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 
 					noisily estout `models', title(Private Insurance Service Util: `title' (proportions)) cell(b(star fmt(2)) se(par fmt(2)))  legend label varlabels(_cons Constant)
 				}
+********************************************
 * end quietly block
 }
 
