@@ -18,7 +18,7 @@ local today: di %tdCCYYNNDD date(c(current_date), "DMY")
 
 * Filepaths
 local log_file "`scratch_dir'/logs/fe_util_hhi_`today'.smcl"
-local log_file_pdf "`scratch_dir'/logs/fe_util_hhi_`today'.pdf"
+local log_file_pdf "dump/fe_util_hhi_`today'.pdf"
 
 * Labels and misc.
 local pay_labels `""Medicare" "Medicaid" "PrivIns" "SelfPay" "NoCharge" "Other" "Missing""'
