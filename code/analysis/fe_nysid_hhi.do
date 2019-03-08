@@ -101,9 +101,12 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 		assert avg_hhisys_cnty_T != .
 		label var avg_hhisys_cnty_T "Cnty avg. HHI sys tercile"
 
+		noisily di ""
 		noisily di in red "* * * avg_hhisys_cnty terciles for 2006 * * "
+		noisily di ""
 		noisily di in red "... Tercile 1: " %6.3f `q1'
 		noisily di in red "... Tercile 2: " %6.3f `q2'
+		noisily di ""
 
 	* Save data in dump for scp to local
 	save "dump/hhi_ny_sid_supp_hosp.dta", replace
