@@ -1,0 +1,94 @@
+---
+title: "NY SID: Distribution of DRG Codes in Utilization Flags"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: pdf_document
+linkcolor: blue
+header-inlcudes:
+    - usepackage{amsmath}
+    - usepackage{float}
+---
+
+
+```{r rmd_setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+knitr::opts_chunk$set(include=FALSE)
+knitr::opts_chunk$set(message=FALSE)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=80), tidy=TRUE)
+knitr::opts_knit$set(root.dir='..')
+```
+```{r libraries}
+library(haven)
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(RColorBrewer)
+```
+
+```{r plot settings}
+theme_set(theme_bw())
+
+qual6 <- brewer.pal(6, 'Set2')
+```
+
+```{r functions}
+```
+
+```{r data}
+if (file.exists('dump/ny_sid_util_drg.rds')) {
+	data <- readRDS('dump/ny_sid_util_drg.rds')
+} else {
+	data <- read_dta('dump/ny_sid_util_drg.dta')
+	saveRDS(data, 'dump/ny_sid_util_drg.rds')
+	system2('rm', 'dump/ny_sid_util_drg.dta')
+}
+
+# Create factor of payer type
+data <- data %>%
+	mutate(payer=factor(case_when(pay1==1 ~ 'Medicare',
+		pay1==2 ~ 'Medicaid',
+		pay1==3 ~ 'Private Insurance',
+		pay1==4 ~ 'Self-pay',
+		pay1==5 ~ 'No Charge',
+		pay1==6 ~ 'Other',
+		TRUE ~ 'Missing'), levels=c('Medicare', 'Medicaid', 'Private Insurance', 'Self-pay', 'No Charge', 'Other', 'Missing'), ordered=TRUE))
+# # Collapse newborn categories
+# data <- data %>%
+# 	mutate(u_newbn=u_newbn2l + u_newbn3l + u_newbn4l) %>%
+# 	select(-u_newbn2l, -u_newbn3l, -u_newbn4l)
+
+utils <- sort(names(select(data, starts_with('u_'))))
+util_labels <- list('Blood', 'Cardiac Cath. Lab', 'CCU', 'Chest X-Ray', 'CT Scan', 'Dialysis', 'Echo', 'Emer. Dept.', 'EEG', 'EKG', 'Erythropoietin', 'ICU', 'Lithotripsy', 'Mental Health/Sub. Abuse', 'MRT', 'Newborn', 'Nuclear Med.', 'Obs.', 'Occ. Therapy', 'Organ Acq.', 'Other Implants', 'Pacemaker', 'Phys. Therapy', 'Radiology/Chemo.', 'Resp. Therapy', 'Speech Therapy', 'Cardiac Stress', 'Ultrasound')
+names(util_labels) <- utils
+```
+
+
+# Distribution of DRG codes within utilization flags
+
+*Note:* distributions of all data in HCUP NY SID SUPP 2006-2012
+
+```{r histograms, include=TRUE, results='asis', message=FALSE}
+for (util in utils) {
+	temp <- filter(data, get(util)>0, !is.na(get(util)))
+
+	# stacked histograms
+	print(
+	ggplot(temp, aes(drg, fill=payer)) +
+		geom_histogram(bins=200) +
+		scale_fill_manual('Payer Type', values=qual6) +
+		scale_x_continuous(limits=c(0,1000), breaks=seq(100,900,100)) +
+		labs(x='DRG Code', title=paste0('Utilization: ', util_labels[[util]])) +
+		theme(legend.title=element_text(size=8), legend.text=element_text(size=8), legend.key.size=unit(0.5, 'lines'))
+	)
+
+	# facet wrapped histograms
+	print(
+	ggplot(temp, aes(drg)) +
+		geom_histogram(bins=200, color='grey40', fill='grey50') +
+		facet_wrap(~payer, ncol=3, scales='fixed') +
+		scale_x_continuous(limits=c(0,1000), breaks=seq(100,900,100)) +
+		labs(x='DRG Code', title=paste0('Utilization: ', util_labels[[util]])) +
+		theme(axis.text.x=element_text(size=6), axis.text.y=element_text(size=6), strip.text.x=element_text(size=8, margin=margin(t=0.8, b=0.8)))
+	)
+}
+```
