@@ -89,5 +89,6 @@ ggplot() +
 	geom_sf(data=ptemp, aes(fill=treat)) +
 	facet_wrap(~aha_year, nrow=3) +
 	scale_fill_manual('Treatment Group', breaks=c('Treatment', 'Control', 'Neither'), values=c('Treatment'='tomato2', 'Control'='wheat3', 'Neither'='lightgrey')) +
-	theme_void()
+	theme_void() +
+	theme(panel.grid=element_line(color='white'))
 ggsave("mapping/treatment_counties.pdf", device='pdf')
