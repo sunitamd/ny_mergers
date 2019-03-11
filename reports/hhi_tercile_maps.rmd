@@ -52,6 +52,7 @@ map_temp <- sid %>%
 	filter(!is.na(year))
 ```
 
+
 # Maps
 
 ```{r plot map, include=TRUE, fig.fullwidth=TRUE}
