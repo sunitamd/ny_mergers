@@ -1,0 +1,87 @@
+---
+title: "County-average system-HHI trends"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: pdf_document
+header-inlcudes:
+    - usepackage{amsmath}
+    - usepackage[document]{ragged2e}
+    - usepackage{float}
+---
+
+```{r rmd_setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+knitr::opts_chunk$set(include=FALSE)
+knitr::opts_chunk$set(message=FALSE)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=80), tidy=TRUE)
+knitr::opts_knit$set(root.dir='..')
+```
+
+```{r libraries}
+library(haven)
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(sf)
+library(RColorBrewer)
+library(assertthat)
+```
+
+```{r plot settings}
+theme_set(theme_bw())
+
+hhi_cols <- brewer.pal(3, 'Reds')
+```
+
+```{r data}
+# prep NY shapefile
+us_shp <- read_sf('shapefiles/cb_2017_us_county_20m/cb_2017_us_county_20m.shp')
+ny_shp <- us_shp %>%  filter(STATEFP=='36')
+ny_shp <- st_transform(ny_shp, crs=3857)
+
+# ny sid supp hhi data
+sid <- read_dta('dump/hhi_ny_sid_supp_hosp.dta')
+
+# merge sid and shapefile data
+assert_that(all(sid %>% mutate(COUNTYFP=substr(cnty,5,7)) %>% pull(COUNTYFP) %in% ny_shp$COUNTYFP), msg='* * * COUNTYFP codes in NY SID SUPP data that do not match in SHAPEFILE! * * *')
+
+map_temp <- sid %>%
+	mutate(COUNTYFP=substr(cnty, 5,7)) %>%
+	select(cnty, COUNTYFP, year, avg_hhisys_cnty, avg_hhisys_cnty_T, starts_with('discharges'), starts_with('u_')) %>%
+	right_join(ny_shp, by='COUNTYFP') %>%
+	filter(!is.na(year))
+```
+
+# Maps
+
+```{r plot map, include=TRUE, fig.fullwidth=TRUE}
+ggplot(map_temp, aes(fill=factor(avg_hhisys_cnty_T))) +
+	geom_sf() +
+	facet_wrap(~year, ncol=3) +
+	scale_fill_manual('HHI Terciles', labels=c('T1: [0, 0.249]', 'T2: (0.249, 0.436]', 'T3: (0.436, 1]'), values=hhi_cols) +
+	theme_void() +
+	theme(panel.grid=element_line(color='white'),
+		legend.title=element_text(size=6), legend.text=element_text(size=6), legend.key.size=unit(0.3,'cm'), legend.position=c(0.6,0.15)) +
+	labs(title='County-average system-HHI terciles', x='', y='')
+```
+
+
+# Summary statistics
+
+- County-average system-HHI terciles created with 2006 data:
+
+* Tercile 1: [0.0, 0.249]
+* Tercile 2: (0.249, 0.436]
+* Tercile 3: (0.436, 1.0]
+
+```{r summary statistics, include=TRUE}
+hosp_counts <- xtabs(~year + avg_hhisys_cnty_T, sid)
+year_totals <- margin.table(hosp_counts, margin=1)
+hosp_props <- apply(hosp_counts, 2, function(x) x/as.vector(year_totals))
+
+kable(hosp_counts, col.names=c('Tercile 1', 'Tercile 2', 'Tercile 3'), caption='Number of hospitals by SYS-HHI terciles') %>%
+	kable_styling(latex_options=c('striped', 'HOLD_position'))
+
+kable(hosp_props, digits=2, col.names=c('Tercile 1', 'Tercile 2', 'Tercile 3'), caption='Prop. of hospitals (by year) by SYS-HHI terciles') %>%
+	kable_styling(latex_options=c('striped', 'HOLD_position'))
+```
