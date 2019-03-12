@@ -75,7 +75,7 @@ ggplot(map_temp, aes(fill=factor(avg_hhisys_cnty_T))) +
 * Tercile 2: (0.249, 0.436]
 * Tercile 3: (0.436, 1.0]
 
-```{r summary statistics, include=TRUE}
+```{r summary statistics, include=TRUE, results='asis'}
 hosp_counts <- xtabs(~year + avg_hhisys_cnty_T, sid)
 year_totals <- margin.table(hosp_counts, margin=1)
 hosp_props <- apply(hosp_counts, 2, function(x) x/as.vector(year_totals))
@@ -85,4 +85,22 @@ kable(hosp_counts, col.names=c('Tercile 1', 'Tercile 2', 'Tercile 3'), caption='
 
 kable(hosp_props, digits=2, col.names=c('Tercile 1', 'Tercile 2', 'Tercile 3'), caption='Prop. of hospitals (by year) by SYS-HHI terciles') %>%
 	kable_styling(latex_options=c('striped', 'HOLD_position'))
+
+for (year in 2007:2012) {
+	rownames <- paste0(c('T1', 'T2', 'T3', 'NA'), paste0(': ', year))
+	colnames <- paste0(c('T1', 'T2', 'T3'), paste0(': ', year-1))
+	if (year==2012) {
+		colnames <- paste0(c('T1', 'T2', 'T3', 'NA'), paste0(': ', year-1))
+	}
+
+	temp <- full_join(
+		sid %>% filter(year==!!year) %>% select(ahaid, avg_hhisys_cnty_T) %>% rename(year1=avg_hhisys_cnty_T),
+		sid %>% filter(year==!!year-1) %>% select(ahaid, avg_hhisys_cnty_T) %>% rename(year0=avg_hhisys_cnty_T),
+		by='ahaid')
+	xtabs(~year1+year0, temp, addNA=TRUE) %>%
+		as.data.frame.matrix(row.names=rownames) %>%
+		kable(col.names=colnames) %>%
+		kable_styling(latex_options=c('striped', 'HOLD_position')) %>%
+		print()
+}
 ```
