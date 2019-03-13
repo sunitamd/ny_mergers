@@ -114,7 +114,7 @@ for (util in utils) {
 ```
 
 
-# Medicaid-share per DRG Code
+# DRG Code Distributions
 
 ```{r , include=TRUE, results='asis', message=FALSE}
 for (util in utils) {
