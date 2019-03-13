@@ -43,7 +43,7 @@ if (file.exists('dump/ny_sid_util_drg.rds')) {
 	system2('rm', 'dump/ny_sid_util_drg.dta')
 }
 
-# Create factor of payer type
+# Factorize payer types
 data <- data %>%
 	mutate(payer=factor(case_when(pay1==1 ~ 'Medicare',
 		pay1==2 ~ 'Medicaid',
@@ -52,10 +52,16 @@ data <- data %>%
 		pay1==5 ~ 'No Charge',
 		pay1==6 ~ 'Other',
 		TRUE ~ 'Missing'), levels=c('Medicare', 'Medicaid', 'Private Insurance', 'Self-pay', 'No Charge', 'Other', 'Missing'), ordered=TRUE))
-# # Collapse newborn categories
-# data <- data %>%
-# 	mutate(u_newbn=u_newbn2l + u_newbn3l + u_newbn4l) %>%
-# 	select(-u_newbn2l, -u_newbn3l, -u_newbn4l)
+
+# Factorize drgs
+data <- mutate(data, drg=factor(drg, levels=unique(data$drg), ordered=FALSE))
+
+# Collapse newborn categories
+if (any(c('u_newbn2l', 'u_newbn3l', 'u_newbn4l') %in% names(data)))  {
+	data <- data %>%
+		mutate(u_newbn=u_newbn2l + u_newbn3l + u_newbn4l) %>%
+		select(-u_newbn2l, -u_newbn3l, -u_newbn4l)
+}
 
 utils <- sort(names(select(data, starts_with('u_'))))
 util_labels <- list('Blood', 'Cardiac Cath. Lab', 'CCU', 'Chest X-Ray', 'CT Scan', 'Dialysis', 'Echo', 'Emer. Dept.', 'EEG', 'EKG', 'Erythropoietin', 'ICU', 'Lithotripsy', 'Mental Health/Sub. Abuse', 'MRT', 'Newborn', 'Nuclear Med.', 'Obs.', 'Occ. Therapy', 'Organ Acq.', 'Other Implants', 'Pacemaker', 'Phys. Therapy', 'Radiology/Chemo.', 'Resp. Therapy', 'Speech Therapy', 'Cardiac Stress', 'Ultrasound')
@@ -67,28 +73,67 @@ names(util_labels) <- utils
 
 *Note:* distributions of all data in HCUP NY SID SUPP 2006-2012
 
-```{r histograms, include=TRUE, results='asis', message=FALSE}
+```{r histograms, include=TRUE, results='asis', message=FALSE, fig.fullwidth=TRUE}
 for (util in utils) {
-	temp <- filter(data, get(util)>0, !is.na(get(util)))
+	temp <- filter(data, get(util)>0, !is.na(get(util))) %>%
+		select(!!util, drg, payer) %>%
+		group_by(drg, payer) %>%
+			add_tally() %>%
+			ungroup() %>%
+		mutate(medicaid_share=ifelse(payer=='Medicaid', rank(n), 0))
 
 	# stacked histograms
 	print(
 	ggplot(temp, aes(drg, fill=payer)) +
-		geom_histogram(bins=200) +
+		geom_histogram(stat='count') +
 		scale_fill_manual('Payer Type', values=qual6) +
-		scale_x_continuous(limits=c(0,1000), breaks=seq(100,900,100)) +
+		scale_x_discrete(labels=NULL) +
 		labs(x='DRG Code', title=paste0('Utilization: ', util_labels[[util]])) +
+		theme(legend.title=element_text(size=8), legend.text=element_text(size=8), legend.key.size=unit(0.5, 'lines'))
+	)
+
+	print(
+	ggplot(temp, aes(reorder(factor(drg), -medicaid_share), fill=payer)) +
+		geom_bar() +
+		scale_fill_manual('Payer Type', values=qual6) +
+		scale_x_discrete(labels=NULL) +
+		labs(x='DRG Code', title=paste0('Utilization: ', util_labels[[util]]), subtitle='DRG codes in desc. of Medicaid share') +
 		theme(legend.title=element_text(size=8), legend.text=element_text(size=8), legend.key.size=unit(0.5, 'lines'))
 	)
 
 	# facet wrapped histograms
 	print(
 	ggplot(temp, aes(drg)) +
-		geom_histogram(bins=200, color='grey40', fill='grey50') +
+		geom_histogram(stat='count', color='grey40', fill='grey50') +
 		facet_wrap(~payer, ncol=3, scales='fixed') +
-		scale_x_continuous(limits=c(0,1000), breaks=seq(100,900,100)) +
+		scale_x_discrete(labels=NULL) +
 		labs(x='DRG Code', title=paste0('Utilization: ', util_labels[[util]])) +
 		theme(axis.text.x=element_text(size=6), axis.text.y=element_text(size=6), strip.text.x=element_text(size=8, margin=margin(t=0.8, b=0.8)))
+	)
+}
+```
+
+
+# Medicaid-share per DRG Code
+
+```{r , include=TRUE, results='asis', message=FALSE}
+for (util in utils) {
+	temp <- filter(data, get(util)>0, !is.na(get(util))) %>%
+		select(!!util, drg, payer) %>%
+		group_by(payer) %>%
+			add_tally(name='total') %>%
+			group_by(drg, add=TRUE) %>%
+				add_tally(name='n') %>%
+				ungroup() %>%
+		mutate(medicaid_share=ifelse(payer=='Medicaid', n/total, 0)) %>%
+		group_by(drg) %>%
+			summarise(mean=mean(medicaid_share), upr=quantile(medicaid_share, 0.95), lwr=quantile(medicaid_share, 0.05)) %>%
+			ungroup()
+
+	print(
+	ggplot(temp, aes(drg, mean)) +
+		geom_line() +
+		geom_ribbon(aes(ymin=lwr, ymax=upr), alpha=0.3)
 	)
 }
 ```
