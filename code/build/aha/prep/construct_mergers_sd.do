@@ -78,6 +78,7 @@ use "data_hospclean/ahacooperall_cleaned.dta", clear
 	
 	* Save file before creating event study indicators
 		save "data_hospclean/ahacooperall_whhi.dta", replace
+		!chmod g+rw "data_hospclean/ahacooperall_whhi.dta"
 	
 ***********************************************************************
 * Create event study merger varaibles
@@ -129,7 +130,8 @@ tab post_target
 	destring id, replace ignore("A")
 	xtset id year 
 		
-save "data_hospclean/hospmerger_fin0210.dta", replace 
+save "data_hospclean/hospmerger_fin0210.dta", replace
+!chmod g+rw "data_hospclean/hospmerger_fin0210.dta"
 		
 * Save NY-only data set
 	keep if year >= 2003 & year <=2012 
@@ -137,7 +139,8 @@ save "data_hospclean/hospmerger_fin0210.dta", replace
 
 	tab post_merger 
 	tab post_target
-save "data_hospclean/hospmerger_ny_fin0210.dta", replace 
+save "data_hospclean/hospmerger_ny_fin0210.dta", replace
+!chmod g+rw "data_hospclean/hospmerger_ny_fin0210.dta"
 	
 ****************************************
 * Collapse to market-level data set
@@ -192,9 +195,11 @@ capture drop post_`mrg'`wind'
 	xtset `mkt' year 
 	
 	save "data_hospclean/market_treatcontrol_Feb 12.dta", replace
+	!chmod g+rw "data_hospclean/market_treatcontrol_Feb 12.dta"
 	
 	keep if fstcd == "36"
 	tab post_anymerger 
 	tab post_anytarget 
 	
 	save "data_hospclean/ny_treatcontrol_Feb 12.dta", replace
+	!chmod g+rw "data_hospclean/ny_treatcontrol_Feb 12.dta"

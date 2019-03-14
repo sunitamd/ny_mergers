@@ -30,10 +30,10 @@ local util_privins "u_cath u_nucmed u_observation u_organacq u_othimplants u_rad
 local util_privins_labels `""Cardiac Cath. Lab" "Nuclear Medicine" "Observation" "Organ Acquisition" "Other implants" "Radiology/Chemotherapy""'
 
 * Model settings
-local xvars "i.avg_hhisys_cnty_T i.year"
+local xvars "i.post_anytarget i.year"
 local panelvar ahaid
 local panelvar_id "`panelvar'_id"
-
+local cluster_var cnty
 
 
 ********************************************
@@ -41,11 +41,41 @@ local panelvar_id "`panelvar'_id"
 log using "`log_file'", replace
 
 quietly {
-* Data
+
+n di ". . . processing treatment control data . . ."
+* Treatent/Control data
+********************************************
+use "`proj_dir'/data_hospclean/ny_treatcontrol_Feb 12.dta", clear
+
+	keep year cnty post_*
+	tostring cnty, replace
+
+	tempfile treatcontrol
+	save `treatcontrol', replace
+
+
+n di ". . . processing market-level exposure data . . "
+* Market-level exposure data
+********************************************
+use "`proj_dir'/data_analytic/market_exposure.dta", clear
+
+	merge m:1 cnty year using `treatcontrol', assert(1 3) keep(3) nogen
+
+	rename id ahaid
+
+	tempfile cov
+	save `cov', replace
+
+* HCUP NY SID SUPP
+********************************************
 use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 
 	label var year ""
 	label var avg_hhisys_cnty "HHI (sys, cnty avg)"
+
+	********************************************
+	* Merge on covariates
+		merge 1:1 ahaid year using `cov', keep(3) nogen
 
 	********************************************
 	* Prep outcome variables
@@ -109,10 +139,12 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 		noisily di ""
 
 	* Save data in dump for scp to local
-	save "dump/hhi_ny_sid_supp_hosp.dta", replace
+	* save "dump/hhi_ny_sid_supp_hosp.dta", replace
+
 
 	********************************************
 	* Run models
+	********************************************
 		encode `panelvar', gen(`panelvar_id')
 		xtset `panelvar_id' year, yearly
 

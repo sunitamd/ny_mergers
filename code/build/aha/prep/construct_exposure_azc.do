@@ -49,3 +49,4 @@ use "`proj_dir'/data_hospclean/ahacooperall_cleaned.dta", clear
 	keep id sysid year `mkts' `mkt_merger_vars'
 
 	save "`proj_dir'/data_analytic/market_exposure.dta", replace
+	!chmod g+rw "`proj_dir'/data_analytic/market_exposure.dta"
