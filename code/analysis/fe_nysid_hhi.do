@@ -41,8 +41,11 @@ local cluster_var cnty
 log using "`log_file'", replace
 
 quietly {
+********************************************
+* RUN PROGRAM
+********************************************
 
-n di ". . . processing treatment control data . . ."
+
 * Treatent/Control data
 ********************************************
 use "`proj_dir'/data_hospclean/ny_treatcontrol_Feb 12.dta", clear
@@ -54,12 +57,11 @@ use "`proj_dir'/data_hospclean/ny_treatcontrol_Feb 12.dta", clear
 	save `treatcontrol', replace
 
 
-n di ". . . processing market-level exposure data . . "
 * Market-level exposure data
 ********************************************
 use "`proj_dir'/data_analytic/market_exposure.dta", clear
 
-	merge m:1 cnty year using `treatcontrol', assert(1 3) keep(3) nogen
+	merge m:1 cnty year using `treatcontrol', keep(3) nogen
 
 	rename id ahaid
 
@@ -72,6 +74,8 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 
 	label var year ""
 	label var avg_hhisys_cnty "HHI (sys, cnty avg)"
+
+	replace cnty="3636049" if ahaid=="6212320" & cnty=="3636043"
 
 	********************************************
 	* Merge on covariates
@@ -161,7 +165,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 				local title: word `i' of `pay_labels'
 				local ++i
 
-				qui xtreg `yvar' `xvars', fe vce(cluster `panelvar_id')
+				qui xtreg `yvar' `xvars', fe vce(cluster `cluster_var')
 				estimates store `model', title(`title')
 			}
 			noisily estout `models', title(Discharges (log counts)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
