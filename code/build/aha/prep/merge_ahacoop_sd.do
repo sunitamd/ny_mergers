@@ -42,7 +42,8 @@
 		sort id year
 
 		
-	save "data_hospclean/ahaall_cleaned.dta", replace 
+	save "data_hospclean/ahaall_cleaned.dta", replace
+	!chmod g+rw "data_hospclean/ahaall_cleaned.dta"
 	
 ********************************************
 ** Cooper Hospital Mergers Data
@@ -66,6 +67,7 @@
 		
 	
 		save "data_hospclean/cooperall_cleaned.dta", replace 
+		!chmod g+rw "data_hospclean/cooperall_cleaned.dta"
 ************************************************************************************************		
 ********************************************************************************************
 ** Merge data sets 
@@ -109,6 +111,7 @@
 
 		
 	save "data_hospclean/ahacooperall_cleaned.dta", replace
+	!chmod g+rw "data_hospclean/ahacooperall_cleaned.dta"
 	
 ************************************************!!!!!!!!!!!!!!!!!!!
 * !!!!Explore the unmerged Cooper data set (_merge== 1)
