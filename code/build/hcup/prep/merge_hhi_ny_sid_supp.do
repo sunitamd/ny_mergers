@@ -63,6 +63,7 @@ di in red "...merging HCUP NY SID SUPP 2006-2012 data..."
 
 
 save "`proj_dir'/data_hospclean/hhi_ny_sid_supp.dta", replace
+!chmod g+rw "`proj_dir'/data_hospclean/hhi_ny_sid_supp.dta"
 
 ********************************************
 * Close log
