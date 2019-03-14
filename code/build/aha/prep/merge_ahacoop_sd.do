@@ -22,8 +22,15 @@
 	replace merge = 0 if merge==.
 	label define merge 0 "0 No merger", modify
 
+	* Drop duplicates from raw data
 	duplicates tag id year, gen(dup)
 	drop if dup>0 & add_reason!="Status Changed To Registered"
+
+	* Fix county data for Lewis County General
+	replace mcntycd = 49 if id=="6212320" & mcntycd!=49
+	replace fcntycd = 49 if id=="6212320" & fcntycd!=49
+	replace cntyname = "Lewis, NY" if id=="6212320" & cntyname!="Lewis, NY"
+	replace fcounty = 36049 if id=="6212320" & fcounty!=36049
 
 	
 	* Create indicator for hospital merger
