@@ -1,5 +1,6 @@
 ********************************************
 * Construct market-level exposure indicator for hospitals
+* Using cooper data for all states
 ********************************************
 
 clear
