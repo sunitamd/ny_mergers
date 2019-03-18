@@ -10,7 +10,7 @@
 ********************************************************************** 
 * Set locals
 ********************************************************************** 
-local mkt cnty
+global mkt cnty
 
 ********************************************************************** 
 * Do Data Analysis
@@ -123,8 +123,8 @@ tab post_merger
 tab post_target	
 	
 * create variable for number of unique systems 
-	bysort `mkt' year sysid : gen sys_n = _n if _n == 1
-	bysort `mkt' year sysid : egen numsys = total(sys_n)
+	bysort $mkt year sysid : gen sys_n = _n if _n == 1
+	bysort $mkt year sysid : egen numsys = total(sys_n)
 	
 	destring id, replace ignore("A")
 	xtset id year 
@@ -152,12 +152,12 @@ use "$proj_dir/ny_mergers/data_hospclean/ahacooperall_whhi.dta", clear
 	gen sysid = sysid_coop
 
 	* Drop Cooper observations w/o cnty information
-	if "`mkt'" == "cnty" {
-		drop if inlist(`mkt', ".", "..")
+	if "$mkt" == "cnty" {
+		drop if inlist($mkt, ".", "..")
 	}
 
 	* Create market-level merger exposure indicator
-	bysort `mkt' year: egen `mkt'_exposure = max(merger)
+	bysort $mkt year: egen $mkt_exposure = max(merger)
 
 	save "$proj_dir/ny_mergers/data_analytic/market_exposure.dta", replace
 	!chmod g+rw "$proj_dir/ny_mergers/data_analytic/market_exposure.dta"
@@ -166,9 +166,8 @@ use "$proj_dir/ny_mergers/data_hospclean/ahacooperall_whhi.dta", clear
 * Collapse to market-level data set
 ****************************************
 use "$proj_dir/ny_mergers/data_hospclean/hospmerger_fin0210.dta", clear
-	local mkt cnty
 	
-	collapse (max) anymerger=merger anytarget=target anyacquirer=acquirer (sum) nmerger=merger ntarget=target nacquirer=acquirer nhosps=one nadm=admtot2 n_admcare=mcrdc2 n_admcaid=mcddc2  (mean) avg_hhi_`mkt'=hhi_`mkt' avg_hhisys_`mkt'=hhisys_`mkt' numsys ,  by(`mkt' year )
+	collapse (max) anymerger=merger anytarget=target anyacquirer=acquirer (sum) nmerger=merger ntarget=target nacquirer=acquirer nhosps=one nadm=admtot2 n_admcare=mcrdc2 n_admcaid=mcddc2  (mean) avg_hhi_$mkt=hhi_$mkt avg_hhisys_$mkt=hhisys_$mkt numsys ,  by($mkt year )
 	
 * Gen state code 
 	gen fstcd = substr(cnty,1,2)
@@ -187,7 +186,7 @@ capture drop post_`mrg'`wind'
 
 	* Change the merger_none variable so a hospital cannot be a control hospital after it has a merger
 		gen `mrg'_yrtemp = year if `mrg' == 1 
-		bysort `mkt': egen `mrg'_yrfrst = min(`mrg'_yrtemp )	
+		bysort $mkt: egen `mrg'_yrfrst = min(`mrg'_yrtemp )	
 		
 	* How many mergers are before 2008 
 		tab  `mrg'_yrfrst
@@ -197,8 +196,8 @@ capture drop post_`mrg'`wind'
 		gen `mrg'_dif =   year - `mrg'_yrfrst
 		
 	* Generate treatment var 
-		by `mkt': gen `mrg'_wind`wind'=1 if `mrg'_dif >=-`wind' & `mrg'_dif <=`wind'
-		bysort `mkt': egen cnt_`mrg'_obs=total(`mrg'_wind`wind'==1 )
+		by $mkt: gen `mrg'_wind`wind'=1 if `mrg'_dif >=-`wind' & `mrg'_dif <=`wind'
+		bysort $mkt: egen cnt_`mrg'_obs=total(`mrg'_wind`wind'==1 )
 		local minobs = `wind'*2+1
 		gen post_`mrg' = 1 if `mrg'_yrfrst != . & `mrg'_wind`wind' == 1 & cnt_`mrg'_obs >= `minobs' & cnt_`mrg'_obs != . & `mrg'_dif >=0
 		replace post_`mrg' = 0 if `mrg'_yrfrst != . & `mrg'_wind`wind' == 1 & cnt_`mrg'_obs >= `minobs' & cnt_`mrg'_obs != . & `mrg'_dif <0
@@ -212,7 +211,7 @@ capture drop post_`mrg'`wind'
 	
 	drop if cnty == ".."
 	destring cnty, replace 
-	xtset `mkt' year 
+	xtset $mkt year 
 	
 	save "$proj_dir/ny_mergers/data_hospclean/market_treatcontrol_Feb 12.dta", replace
 	!chmod g+rw "$proj_dir/ny_mergers/data_hospclean/market_treatcontrol_Feb 12.dta"
