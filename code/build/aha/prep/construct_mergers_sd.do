@@ -5,8 +5,7 @@
 ********************************************************************** 
 * Set directory
 ********************************************************************** 
-	global filepath /gpfs/data/desailab/home
-	cd "$filepath/ny_mergers/"
+	global proj_dir "/gpfs/data/desailab/home"
 
 ********************************************************************** 
 * Set locals
@@ -17,7 +16,7 @@ local mkt cnty
 * Do Data Analysis
 *********************************************************************
 
-use "data_hospclean/ahacooperall_cleaned.dta", clear	
+use "$proj_dir/ny_mergers/data_hospclean/ahacooperall_cleaned.dta", clear	
 	drop add_reason_cat add_reason dup deletion sys_merge merge mergect mergert sys_wi_merge sys_cm_merge merger add_del_merge
 			
 
@@ -77,15 +76,15 @@ use "data_hospclean/ahacooperall_cleaned.dta", clear
 	}
 	
 	* Save file before creating event study indicators
-		save "data_hospclean/ahacooperall_whhi.dta", replace
-		!chmod g+rw "data_hospclean/ahacooperall_whhi.dta"
+		save "$proj_dir/ny_mergers/data_hospclean/ahacooperall_whhi.dta", replace
+		!chmod g+rw "$proj_dir/ny_mergers/data_hospclean/ahacooperall_whhi.dta"
 	
 ***********************************************************************
 * Create event study merger varaibles
 ***********************************************************************
 * Old; 
 
-use "data_hospclean/ahacooperall_whhi.dta", clear
+use "$proj_dir/ny_mergers/data_hospclean/ahacooperall_whhi.dta", clear
 
 keep if year >= 2006 & year <= 2012 
 
@@ -130,8 +129,8 @@ tab post_target
 	destring id, replace ignore("A")
 	xtset id year 
 		
-save "data_hospclean/hospmerger_fin0210.dta", replace
-!chmod g+rw "data_hospclean/hospmerger_fin0210.dta"
+save "$proj_dir/ny_mergers/data_hospclean/hospmerger_fin0210.dta", replace
+!chmod g+rw "$proj_dir/ny_mergers/data_hospclean/hospmerger_fin0210.dta"
 		
 * Save NY-only data set
 	keep if year >= 2003 & year <=2012 
@@ -139,13 +138,13 @@ save "data_hospclean/hospmerger_fin0210.dta", replace
 
 	tab post_merger 
 	tab post_target
-save "data_hospclean/hospmerger_ny_fin0210.dta", replace
-!chmod g+rw "data_hospclean/hospmerger_ny_fin0210.dta"
+save "$proj_dir/ny_mergers/data_hospclean/hospmerger_ny_fin0210.dta", replace
+!chmod g+rw "$proj_dir/ny_mergers/data_hospclean/hospmerger_ny_fin0210.dta"
 
 ********************************************
 * Construct market-level exposure indicator
 ********************************************
-use "data_hospclean/ahacooperall_whhi.dta", clear
+use "$proj_dir/ny_mergers/data_hospclean/ahacooperall_whhi.dta", clear
 
 	keep if year >= 2006 & year <= 2012
 
@@ -160,13 +159,13 @@ use "data_hospclean/ahacooperall_whhi.dta", clear
 	* Create market-level merger exposure indicator
 	bysort `mkt' year: egen `mkt'_exposure = max(merger)
 
-	save "data_analytic/market_exposure.dta", replace
-	!chmod g+rw "data_analytic/market_exposure.dta"
+	save "$proj_dir/ny_mergers/data_analytic/market_exposure.dta", replace
+	!chmod g+rw "$proj_dir/ny_mergers/data_analytic/market_exposure.dta"
 	
 ****************************************
 * Collapse to market-level data set
 ****************************************
-use "data_hospclean/hospmerger_fin0210.dta", clear
+use "$proj_dir/ny_mergers/data_hospclean/hospmerger_fin0210.dta", clear
 	local mkt cnty
 	
 	collapse (max) anymerger=merger anytarget=target anyacquirer=acquirer (sum) nmerger=merger ntarget=target nacquirer=acquirer nhosps=one nadm=admtot2 n_admcare=mcrdc2 n_admcaid=mcddc2  (mean) avg_hhi_`mkt'=hhi_`mkt' avg_hhisys_`mkt'=hhisys_`mkt' numsys ,  by(`mkt' year )
@@ -215,12 +214,12 @@ capture drop post_`mrg'`wind'
 	destring cnty, replace 
 	xtset `mkt' year 
 	
-	save "data_hospclean/market_treatcontrol_Feb 12.dta", replace
-	!chmod g+rw "data_hospclean/market_treatcontrol_Feb 12.dta"
+	save "$proj_dir/ny_mergers/data_hospclean/market_treatcontrol_Feb 12.dta", replace
+	!chmod g+rw "$proj_dir/ny_mergers/data_hospclean/market_treatcontrol_Feb 12.dta"
 	
 	keep if fstcd == "36"
 	tab post_anymerger 
 	tab post_anytarget 
 	
-	save "data_hospclean/ny_treatcontrol_Feb 12.dta", replace
-	!chmod g+rw "data_hospclean/ny_treatcontrol_Feb 12.dta"
+	save "$proj_dir/ny_mergers/data_hospclean/ny_treatcontrol_Feb 12.dta", replace
+	!chmod g+rw "$proj_dir/ny_mergers/data_hospclean/ny_treatcontrol_Feb 12.dta"
