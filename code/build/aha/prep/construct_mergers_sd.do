@@ -141,6 +141,27 @@ save "data_hospclean/hospmerger_fin0210.dta", replace
 	tab post_target
 save "data_hospclean/hospmerger_ny_fin0210.dta", replace
 !chmod g+rw "data_hospclean/hospmerger_ny_fin0210.dta"
+
+********************************************
+* Construct market-level exposure indicator
+********************************************
+use "data_hospclean/ahacooperall_whhi.dta", clear
+
+	keep if year >= 2006 & year <= 2012
+
+	keep sysid_coop id year merger `mkt'
+	gen sysid = sysid_coop
+
+	* Drop Cooper observations w/o cnty information
+	if "`mkt'" == "cnty" {
+		drop if inlist(`mkt', ".", "..")
+	}
+
+	* Create market-level merger exposure indicator
+	bysort `mkt' year: egen `mkt'_exposure = max(merger)
+
+	save "data_analytic/market_exposure.dta", replace
+	!chmod g+rw "data_analytic/market_exposure.dta"
 	
 ****************************************
 * Collapse to market-level data set
