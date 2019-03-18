@@ -142,13 +142,13 @@ save "$proj_dir/ny_mergers/data_hospclean/hospmerger_ny_fin0210.dta", replace
 !chmod g+rw "$proj_dir/ny_mergers/data_hospclean/hospmerger_ny_fin0210.dta"
 
 ********************************************
-* Construct market-level exposure indicator
+* Construct market exposure indicator
 ********************************************
 use "$proj_dir/ny_mergers/data_hospclean/ahacooperall_whhi.dta", clear
 
 	keep if year >= 2006 & year <= 2012
 
-	keep sysid_coop id year merger $mkt
+	keep sysid_coop year merger fstcd cnty $mkt
 	gen sysid = sysid_coop
 
 	* Drop Cooper observations w/o cnty information
@@ -157,7 +157,7 @@ use "$proj_dir/ny_mergers/data_hospclean/ahacooperall_whhi.dta", clear
 	}
 
 	* Create market-level merger exposure indicator
-	bysort $mkt year: egen exposure_$mkt = max(merger)
+	bysort id year $mkt: egen exposure_$mkt = max(merger)
 
 	save "$proj_dir/ny_mergers/data_analytic/market_exposure.dta", replace
 	!chmod g+rw "$proj_dir/ny_mergers/data_analytic/market_exposure.dta"

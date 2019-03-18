@@ -10,7 +10,7 @@ set more off
 * Macros
 
 * Directories
-local proj_dir "/gpfs/data/desailab/home/ny_mergers"
+global proj_dir "/gpfs/data/desailab/home"
 local scratch_dir "/gpfs/scratch/azc211/ny_mergers"
 
 * Date
@@ -48,7 +48,7 @@ quietly {
 
 * Treatent/Control data
 ********************************************
-use "`proj_dir'/data_hospclean/ny_treatcontrol_Feb 12.dta", clear
+use "$proj_dir/ny_mergers/data_hospclean/ny_treatcontrol_Feb 12.dta", clear
 
 	keep year cnty post_*
 	tostring cnty, replace
@@ -59,27 +59,32 @@ use "`proj_dir'/data_hospclean/ny_treatcontrol_Feb 12.dta", clear
 
 * Market-level exposure data
 ********************************************
-use "`proj_dir'/data_analytic/market_exposure.dta", clear
+use "$proj_dir/ny_mergers/data_analytic/market_exposure.dta", clear
 
-	merge m:1 cnty year using `treatcontrol', keep(3) nogen
+	* keep only NY state observations
+	keep if fstcd==36
 
-	rename id ahaid
+	keep cnty year exposure_*
+	duplicates drop
+
+	merge 1:1 cnty year using `treatcontrol', assert(3) nogen
 
 	tempfile cov
 	save `cov', replace
 
 * HCUP NY SID SUPP
 ********************************************
-use "`proj_dir'/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
+use "$proj_dir/ny_mergers/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 
 	label var year ""
 	label var avg_hhisys_cnty "HHI (sys, cnty avg)"
 
+	* Cnty fix for Lewis County General Hospital
 	replace cnty="3636049" if ahaid=="6212320" & cnty=="3636043"
 
 	********************************************
 	* Merge on covariates
-		merge 1:1 ahaid year using `cov', keep(3) nogen
+		merge m:1 cnty year using `cov', assert(3) nogen
 
 	********************************************
 	* Prep outcome variables
