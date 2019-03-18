@@ -148,7 +148,7 @@ use "$proj_dir/ny_mergers/data_hospclean/ahacooperall_whhi.dta", clear
 
 	keep if year >= 2006 & year <= 2012
 
-	keep sysid_coop id year merger `mkt'
+	keep sysid_coop id year merger $mkt
 	gen sysid = sysid_coop
 
 	* Drop Cooper observations w/o cnty information
