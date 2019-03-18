@@ -157,7 +157,7 @@ use "$proj_dir/ny_mergers/data_hospclean/ahacooperall_whhi.dta", clear
 	}
 
 	* Create market-level merger exposure indicator
-	bysort $mkt year: egen $mkt_exposure = max(merger)
+	bysort $mkt year: egen exposure_$mkt = max(merger)
 
 	save "$proj_dir/ny_mergers/data_analytic/market_exposure.dta", replace
 	!chmod g+rw "$proj_dir/ny_mergers/data_analytic/market_exposure.dta"
