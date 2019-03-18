@@ -154,6 +154,13 @@ use "$proj_dir/ny_mergers/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 	********************************************
 	* Run models
 	********************************************
+	n di ""
+	n di "* * * Model specifications * * *"
+	n di "xvars: `xvars'"
+	n di "panel var: `panelvar'"
+	n di "cluster var: `cluster_var'"
+	n di ""
+
 		encode `panelvar', gen(`panelvar_id')
 		xtset `panelvar_id' year, yearly
 
