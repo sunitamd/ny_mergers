@@ -32,8 +32,8 @@ local log_file "$scratch_dir/logs/construct_hospital_hhi_`today'.smcl"
 * RUN PROGRAM
 ********************************************
 
-log using `log_file', replace
 cap log close
+log using `log_file', replace
 
 * Check for ftools package
 	cap which ftools
