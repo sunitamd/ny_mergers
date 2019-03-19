@@ -10,6 +10,13 @@ set more off
 * MACROS
 ********************************************
 
+* User arguments
+local sample `1'
+if !inlist("`sample'", "", "0", "1") {
+	di in red "! ! ! User argument, if given, must be one of {0, 1} ! ! !"
+	break
+}
+
 * Directories
 global proj_dir "/gpfs/data/desailab/home"
 global scratch_dir "/gpfs/scratch/azc211/ny_mergers"
@@ -29,53 +36,80 @@ log using `log_file', replace
 cap log close
 
 * Check for ftools package
-cap which ftools
-if _rc==111 ssc install ftools
+	cap which ftools
+	if _rc==111 ssc install ftools
 
+* Get sysids from AHA-Cooper dataset
 use "$proj_dir/ny_mergers/data_hospclean/ahacooperall_cleaned.dta", clear
 
 	keep if fstcd==36
+	keep if year>=2006 & year<=2012
+	drop if artificial==1
+
+	* Use Cooper sysid ana AHA sysid when missing
+	replace sysid2 = sysid if sysid2=="" & sysid!="."
+	drop if sysid2 == ""
+
 	keep id sysid2 year
+	
 	rename id ahaid
-		encode ahaid, gen(ahaid_cd)
 	rename sysid2 sysid
-		encode sysid, gen(sysid_cd)
 
 	tempfile sysids
 	save `sysids', replace
 
-use "$proj_dir/ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp.dta", clear
+* HCUP NY SID SUPP data
+if `sample' {
+	use "$proj_dir/ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp_sample.dta", clear
+}
+else {
+	use "$proj_dir/ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp.dta", clear
+}
 
-	tempfile master
-	save `master', replace
+	tempfile nysid
+	save `nysid', replace
 
 * Standard HHI (share of commercially-insured patients within each zipcode-MDC combination)
 ********************************************
-	* Collapse private insurance discharges to zip-mdc-hospital-year level
+	* Reduce to patient-level
 		keep if pay1==3
-		gen discharge = 1
+
+		* reduce from discharge record level to patient level
+		keep visitlink zip mdc ahaid year
+		duplicates drop
+		gen patient=1
+
+		* join sysid, from(`sysids') by(ahaid year)
+		merge m:1 ahaid year using `sysids', keep(3) nogen
 
 		* Encode string id variables for ftool functions
-		foreach var of varlist zip ahaid {
+		foreach var of varlist zip ahaid sysid {
 			encode `var', gen(`var'_cd)
 		}
+		qui lookfor _cd
+		local encoded_vars `r(varlist)'
 
-		join sysid_cd, from(`sysids') by(ahaid_cd year)
+	* Collapse to hospital-level
+		fcollapse (sum) patients=patient, by(mdc year `encoded_vars') fast
 
-		fcollapse (sum) discharges=discharge, by(zip_cd mdc ahaid_cd year) fast
-
-	* HHI_z,m
-	bysort zip_cd mdc year: egen total_discharges = total(discharges)
-
-
-qui levelsof zip_id, local(zips) clean
-foreach zip of local zips {
-	qui levelsof mdc if zip_id==`zip', local(mdcs) clean
-	foreach mdc of local mdcs {
-
-	}
-}
+	* Commerical patient shares
+		bysort zip_cd mdc year: egen patients_tot = total(patients)
+		bysort sysid_cd zip_cd mdc year: egen patients_sys = total(patients)
+		gen patient_share = patients_sys / patients_tot
+		gen patient_share_sq = patient_share^2
+		
+		* avoid double counting (since data is at hospital-level)
+		bysort sysid_cd zip_cd mdc year: gen sysid_temp = 1 if [_n==1]
+		bysort zip_cd mdc year: gen patient_share_sq_temp = patient_share_sq if sysid_temp == 1
+		
+	* Zipcode x MDC HHI
+		bysort zip_cd mdc year: egen hhi_zm = total(patient_share_sq_temp)
+		label var hhi_zm "Zipcode-MDC HHI by system commercial patient share"
+		drop sysid_temp patient_share_sq_temp
 	
+	tempfile hhi_zm
+	save `hhi_zm', replace
 
 * Hospital-specific HHI
 ********************************************
+	
