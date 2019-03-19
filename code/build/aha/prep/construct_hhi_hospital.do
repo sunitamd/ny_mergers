@@ -72,7 +72,7 @@ else {
 
 * Standard HHI (share of commercially-insured patients within each zipcode-MDC combination)
 ********************************************
-	* Reduce to patient-level
+	* Reduce to unique patients
 		keep if pay1==3
 
 		* reduce from discharge record level to patient level
@@ -88,22 +88,20 @@ else {
 		foreach var of varlist zip ahaid sysid {
 			encode `var', gen(`var'_cd)
 		}
-		qui lookfor _cd
-		local encoded_vars `r(varlist)'
 
-	* Collapse to hospital-level
-		fcollapse (sum) patients=patient, by(mdc year `encoded_vars') fast
+	* Collapse to zipcode-MDC-hospital-level
+		fcollapse (sum) patients=patient, by(zip_cd mdc ahaid_cd sysid_cd year) fast
 			label var patients "Total unique patients per zipcode-MDC-hospital-year"
 
 	* Commerical patient shares
-		bysort zip_cd mdc year: egen patients_tot = total(patients)
-			label var patients_tot "Total unique patients per zipcode-MDC-year"
+		bysort zip_cd mdc year: egen patients_zipmdc = total(patients)
+			label var patients_zipmdc "Total unique patients per zipcode-MDC-year"
 		bysort sysid_cd zip_cd mdc year: egen patients_sys = total(patients)
 			label var patients_sys "Total unique patients per zipcode-MDC-system-year"
-		gen patient_share = patients_sys / patients_tot
+		gen patient_share = patients_sys / patients_zipmdc
 		gen patient_share_sq = patient_share^2
 		
-		* avoid double counting (since data is at hospital-level)
+		* avoid double counting (since data is at zipcode-MDC-hospital-level)
 		bysort sysid_cd zip_cd mdc year: gen sysid_temp = 1 if [_n==1]
 		bysort zip_cd mdc year: gen patient_share_sq_temp = patient_share_sq if sysid_temp == 1
 		
@@ -116,7 +114,9 @@ else {
 * Hospital-specific HHI
 ********************************************
 	* Hospital-level HHI weights (hospital's commericial patients from zipcode x mdc / hospital's total commericial patients)
-		gen w_hosp = patients / patients_tot
+		bysort ahaid_cd year: egen patients_hosp = total(patients)
+			label var patients_hosp "Total unique patients per hospital-year"
+		gen w_hosp = patients / patients_hosp
 			label var w_hosp "Hospital zipcode-MDC weight"
 		gen hhi_zm_w = hhi_zm * w_hosp
 			label var hhi_zm_w "Weighted zipcode-MDC HHI"
