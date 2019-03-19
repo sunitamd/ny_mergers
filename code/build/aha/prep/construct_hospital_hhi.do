@@ -39,7 +39,9 @@ cap log close
 	cap which ftools
 	if _rc==111 ssc install ftools
 
+
 * Get sysids from AHA-Cooper dataset
+********************************************
 use "$proj_dir/ny_mergers/data_hospclean/ahacooperall_cleaned.dta", clear
 
 	keep if fstcd==36
@@ -55,19 +57,18 @@ use "$proj_dir/ny_mergers/data_hospclean/ahacooperall_cleaned.dta", clear
 	rename id ahaid
 	rename sysid2 sysid
 
-	tempfile sysids
-	save `sysids', replace
+tempfile sysids
+save `sysids', replace
+
 
 * HCUP NY SID SUPP data
+********************************************
 if `sample' {
 	use "$proj_dir/ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp_sample.dta", clear
 }
 else {
 	use "$proj_dir/ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp.dta", clear
 }
-
-	tempfile nysid
-	save `nysid', replace
 
 * Standard HHI (share of commercially-insured patients within each zipcode-MDC combination)
 ********************************************
@@ -78,6 +79,7 @@ else {
 		keep visitlink zip mdc ahaid year
 		duplicates drop
 		gen patient=1
+			label var patient "Unique patient count"
 
 		* join sysid, from(`sysids') by(ahaid year)
 		merge m:1 ahaid year using `sysids', keep(3) nogen
@@ -91,10 +93,13 @@ else {
 
 	* Collapse to hospital-level
 		fcollapse (sum) patients=patient, by(mdc year `encoded_vars') fast
+			label var patients "Total unique patients per zipcode-MDC-hospital-year"
 
 	* Commerical patient shares
 		bysort zip_cd mdc year: egen patients_tot = total(patients)
+			label var patients_tot "Total unique patients per zipcode-MDC-year"
 		bysort sysid_cd zip_cd mdc year: egen patients_sys = total(patients)
+			label var patients_sys "Total unique patients per zipcode-MDC-system-year"
 		gen patient_share = patients_sys / patients_tot
 		gen patient_share_sq = patient_share^2
 		
@@ -104,12 +109,22 @@ else {
 		
 	* Zipcode x MDC HHI
 		bysort zip_cd mdc year: egen hhi_zm = total(patient_share_sq_temp)
-		label var hhi_zm "Zipcode-MDC HHI by system commercial patient share"
+			label var hhi_zm "Zipcode-MDC HHI by system commercial patient share"
 		drop sysid_temp patient_share_sq_temp
-	
-	tempfile hhi_zm
-	save `hhi_zm', replace
+
 
 * Hospital-specific HHI
 ********************************************
-	
+	* Hospital-level HHI weights (hospital's commericial patients from zipcode x mdc / hospital's total commericial patients)
+		gen w_hosp = patients_hosp_zm / patients_hosp_tot
+			label var w_hosp "Hospital zipcode-MDC weight"
+		gen hhi_zm_w = hhi_zm * w_hosp
+			label var hhi_zm_w "Weighted zipcode-MDC HHI"
+		bysort ahaid_cd year: egen hhi_hosp = total(hhi_zm_w)
+
+	* Save
+	save "$proj_dir/ny_mergers/data_analytic/hhi_hospital.dta", replace
+
+
+********************************************
+log close
