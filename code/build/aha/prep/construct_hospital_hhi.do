@@ -116,7 +116,7 @@ else {
 * Hospital-specific HHI
 ********************************************
 	* Hospital-level HHI weights (hospital's commericial patients from zipcode x mdc / hospital's total commericial patients)
-		gen w_hosp = patients_hosp_zm / patients_hosp_tot
+		gen w_hosp = patients / patients_tot
 			label var w_hosp "Hospital zipcode-MDC weight"
 		gen hhi_zm_w = hhi_zm * w_hosp
 			label var hhi_zm_w "Weighted zipcode-MDC HHI"
