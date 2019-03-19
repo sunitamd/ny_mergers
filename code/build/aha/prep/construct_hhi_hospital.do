@@ -12,7 +12,8 @@ set more off
 
 * User arguments
 local sample `1'
-if !inlist("`sample'", "", "0", "1") {
+if "`sample'"=="" local sample 0
+if !inlist(`sample', 0, 1) {
 	di in red "! ! ! User argument, if given, must be one of {0, 1} ! ! !"
 	break
 }
