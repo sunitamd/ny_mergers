@@ -1,0 +1,11 @@
+/*dowload all hospital level data*/
+. use "/gpfs/data/desailab/home/ny_mergers/data_hospclean/hospmerger_fin0210.dta> "
+/*variable for post merger status for targeted hospitals*/
+. gen post_m_t= post_target == 1
+/*creates variable for non-merging hospitals based on hosp id* for target hospitals*/
+. egen non_m_t= min(post_target == 0), by(id)
+/* generates variable for all hospitals that have merged, regardless of pre or post merger status, by hosp id*/
+. egen pre_post= max(post_target), by(id)
+(2272 missing values generated)
+/*creates variable for only pre-merger status; must satisfy being a merger hospital (pre_post variable) and being not in a post state (post_target ==0)*/
+. gen pre_m_t= post_target==0 & pre_post==1
