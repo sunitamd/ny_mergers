@@ -1,0 +1,27 @@
+
+/*dowload all hospital level data*/
+. use "/gpfs/data/desailab/home/ny_mergers/data_hospclean/hospmerger_fin0210.dta> "
+/*variable for post merger status for targeted hospitals*/
+. gen post_m_t= post_target == 1
+/*creates variable for non-merging hospitals based on hosp id* for target hospitals*/
+. egen non_m= min(post_target == 0 & post_acquirer==0), by(id)
+/* generates variable for all hospitals that have merged, regardless of pre or post merger status, by hosp id*/
+. egen pre_post= max(post_target), by(id)
+/*creates variable for only pre-merger status; must satisfy being a merger hospital (pre_post variable) and being not in a post state (post_target ==0)*/
+. gen pre_m_t= post_target==0 & pre_post==1
+/*follow same steps for aquirer; do not need non mergers since this remains the same*/
+gen post_m_a= post_acquirer == 1
+egen pre_post_a= max(post_acquirer), by(id)
+gen pre_m_a= post_acquirer==0 & pre_post_a==1
+
+
+/*table stats for non-merged hospitals*/
+tabstat non_m nbeds mcrdc2 mcddc2 techtotal2 if non_m==1, statistics( mean sd median )
+/*table stats for pre-merger target hospitals*/
+tabstat pre_m_t nbeds mcrdc2 mcddc2 techtotal2 if pre_m_t==1, statistics( mean sd median )
+/* table stats for post-merger target hospitals*/
+tabstat post_m_t nbeds mcrdc2 mcddc2 techtotal2 if post_m_t==1, statistics( mean sd median )
+/* table stats for pre-merger acquirer hospitals*/
+tabstat pre_m_a nbeds mcrdc2 mcddc2 techtotal2 if pre_m_a==1, statistics( mean sd median )
+/* table stats for post-merger acquirer hospitals*/
+tabstat post_m_a nbeds mcrdc2 mcddc2 techtotal2 if post_m_a==1, statistics( mean sd median )
