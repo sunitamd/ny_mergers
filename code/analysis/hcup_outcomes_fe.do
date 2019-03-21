@@ -65,7 +65,7 @@ quietly {
 ********************************************
 
 * Prep covariates data
-if "`xvarOpt'" == "post_anytarget"
+if "`xvarOpt'" == "post_anytarget" {
 	* Treatent/Control data
 	********************************************
 	use "$proj_dir/ny_mergers/data_hospclean/ny_treatcontrol_Feb 12.dta", clear
