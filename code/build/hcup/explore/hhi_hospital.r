@@ -1,10 +1,21 @@
+############################################
+# Scatter hospital-HHIs
+############################################
+
 library(haven)
 library(tidyverse)
 
+
+############################################
 theme_set(theme_bw())
 
+
+############################################
 hhi <- read_dta('dump/hhi_hospital.dta')
 
+
+# Scatter HHI in 2006 vs HHI in 2012
+############################################
 ptemp <- hhi %>%
 	filter(year %in% c(2006, 2012)) %>%
 	spread(key=year, value=hhi_hosp, sep='_')
@@ -21,6 +32,8 @@ ggplot(ptemp, aes(x=year_2006, y=year_2012)) +
 	labs(title="Hospital-level HHI", x="HHI (2006)", y="HHI (2012)", caption=caption_na)
 ggsave('outputs/hhi_hospital_scatter1.pdf', device='pdf')
 
+# Scatter HHI in first observered year vs HHI in last observed year
+############################################
 ptemp <- hhi %>%
 	group_by(ahaid) %>%
 		mutate(hhi1=first(hhi_hosp, order_by=year), hhi2=last(hhi_hosp, order_by=year)) %>%
