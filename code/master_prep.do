@@ -1,5 +1,6 @@
 ********************************************
-* MASTER
+* MASTER PREP
+* Imports, cleans, and preps all raw data sources for analysis
 ********************************************
 
 clear
