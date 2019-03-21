@@ -5,13 +5,12 @@
 ********************************************************************** 
 * Set directory
 ********************************************************************** 
-	global filepath /gpfs/data/desailab/home
-	cd "$filepath/ny_mergers/"
+	global proj_dir "/gpfs/data/desailab/home"
 
 ********************************************************************** 
 * Set locals
 **********************************************************************
-	use "data_hospclean/aha_combined_final_v2.dta", clear
+	use "$proj_dir/ny_mergers/data_hospclean/aha_combined_final_v2.dta", clear
 	
 	tostring sysid, replace
 	label var sysid "AHA sysid"
@@ -42,13 +41,14 @@
 		sort id year
 
 		
-	save "data_hospclean/ahaall_cleaned.dta", replace 
+	save "$proj_dir/ny_mergers/data_hospclean/ahaall_cleaned.dta", replace
+	!chmod g+rw "$proj_dir/ny_mergers/data_hospclean/ahaall_cleaned.dta"
 	
 ********************************************
 ** Cooper Hospital Mergers Data
 ********************************************
-	*use "data_hospclean/HC_ext_mergerdata_public.dta", clear
-	use "$filepath/orig_data/cooper_mergers/HC_ext_mergerdata_imputed.dta", clear
+
+	use "$proj_dir/orig_data/cooper_mergers/HC_ext_mergerdata_imputed.dta", clear
 	
 	rename sysid sysid2
 	label var sysid2 "Cooper sysid"
@@ -65,14 +65,17 @@
 		label var merger2 "Cooper merger indicator"
 		
 	
-		save "data_hospclean/cooperall_cleaned.dta", replace 
-************************************************************************************************		
-********************************************************************************************
+		save "$proj_dir/ny_mergers/data_hospclean/cooperall_cleaned.dta", replace 
+		!chmod g+rw "$proj_dir/ny_mergers/data_hospclean/cooperall_cleaned.dta"
+
+********************************************
 ** Merge data sets 
-********************************************************************************************
-************************************************************************************************		
-	use "data_hospclean/cooperall_cleaned.dta", clear
-		merge 1:1 id year using "data_hospclean/ahaall_cleaned.dta"
+********************************************
+
+	use "$proj_dir/ny_mergers/data_hospclean/cooperall_cleaned.dta", clear
+
+		merge 1:1 id year using "$proj_dir/ny_mergers/data_hospclean/ahaall_cleaned.dta"
+	
 		label define L_source 1 "Cooper (master)" 2 "AHA (using)" 3 "matched", add
 		label values _merge L_source
 		
@@ -108,7 +111,8 @@
 			tab ever_merger2 if _merge == 1 & serv == . 
 
 		
-	save "data_hospclean/ahacooperall_cleaned.dta", replace
+	save "$proj_dir/ny_mergers/data_hospclean/ahacooperall_cleaned.dta", replace
+	!chmod g+rw "$proj_dir/ny_mergers/data_hospclean/ahacooperall_cleaned.dta"
 	
 ************************************************!!!!!!!!!!!!!!!!!!!
 * !!!!Explore the unmerged Cooper data set (_merge== 1)

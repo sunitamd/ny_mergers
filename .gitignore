@@ -1,7 +1,6 @@
 code/temp/
 data/
 dump/
-slurm/
 *.DS_Store
 
 # History files
