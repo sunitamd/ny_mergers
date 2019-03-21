@@ -19,4 +19,5 @@ ggplot(ptemp, aes(year_2006, year_2012)) +
 	xlim(c(0,1.0)) +
 	ylim(c(0,1.0)) +
 	labs(title="Hospital-level HHI", x="HHI (2006)", y="HHI (2012)", caption=caption_na)
+ggsave('outputs/hhi_hospital_scatter.pdf', device='pdf')
 
