@@ -1,5 +1,6 @@
 ********************************************
-* Fixed effects regression of service utilization (HCUP NY SID SUPP) on county average system HHI
+* Run fixed effects regression of HCUP NY SID SUPP outcomes on specified independent variables
+* NOTE: xvars must be specified through command line argument!
 ********************************************
 
 clear
