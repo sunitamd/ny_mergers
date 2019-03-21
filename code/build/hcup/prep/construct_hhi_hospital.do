@@ -133,6 +133,11 @@ else {
 		bysort ahaid_cd year: egen hhi_hosp = total(hhi_zm_w)
 
 	* Collapse to hospital-years
+		keep ahaid_cd sysid_cd year hhi_hosp
+		duplicates drop
+		decode ahaid_cd, gen(ahaid)
+		decode sysid_cd, gen(sysid)
+		drop ahaid_cd sysid_cd
 
 
 	* Save
