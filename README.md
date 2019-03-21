@@ -13,24 +13,25 @@ Measuring the impact of hospital mergers in New York State on quality of, access
 
 # Repository structure
 
-	.  
+	REPO
+	.
 	|-- code
 	|   |-- prep        - cleaning raw data
 	|   |-- explore     - exploratory data analysis
 	|   |-- analysis    - main analyses
-	|   |-- reports     - reports for internal meetings, communication
-	|   |-- outputs	    - outputs (figures, tables, etc.) for external communication
+	|-- reports         - reports for internal meetings, communication
+	|-- shapefiles      - shapefiles
+	|-- outputs	    - figures, tables, etc.
+	|-- public          - outputs for publication/external audiences
 	
-	|-- data
-	|   |-- raw	    - raw data from external sources
-	|   |   |-- AHA
-	|   |   |-- HCUP NY SID SUPP
-	|   |-- clean       - cleaned data for reports, analyses, etc.
-	|   |-- inputs	    - cleaned data from external sources
-	|   |   |-- cooper  - Hospital merger dataset (Cooper et al.)
-	|   |   |-- mmc     - New York State county-level Medicaid enrollment (Orin Hasan)
-    
-    |-- shapefiles
+	DATA
+	/gpfs/data/desailab/home/ny_mergers
+	|-- data_analytic   - data for analyses
+	|-- data_hospclean  - prepped/cleaned data from raw sources
+	|-- data_sidclean   - prepped HCUP data
+	|   |-- aha_add_delete
+	|   |-- sid_work
+	|-- inputs          - prepped/cleaned data from external sources
  
 
 # Data
