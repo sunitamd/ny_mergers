@@ -45,7 +45,8 @@ if "`xvarOpt'" == "post_anytarget" {
 }
 else if "`xvarOpt'" == "hhi_hosp" {
 	local xvars hhi_hosp
-} else if "`xvarOpt'" == "hhi_avg_hhisys_cnty_T" {
+}
+else if "`xvarOpt'" == "hhi_avg_hhisys_cnty_T" {
 	local xvars "i.hhi_avg_hhisys_cnty_T"
 }
 local xvars "`xvars' i.year"
