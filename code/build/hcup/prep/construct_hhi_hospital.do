@@ -26,7 +26,7 @@ global scratch_dir "/gpfs/scratch/azc211/ny_mergers"
 local today: di %tdCCYYNNDD date(c(current_date), "DMY")
 
 * Log file
-local log_file "$scratch_dir/logs/construct_hospital_hhi_`today'.smcl"
+local log_file "$scratch_dir/logs/construct_hhi_hospital_`today'.smcl"
 
 
 ********************************************
@@ -81,7 +81,7 @@ else {
 		* Drop Foreign, Homeless, Invalid, Missing zipcodes
 		drop if inlist(zip, "", "A", "B", "C", "F", "H", "M")
 		* Drop 3 digit zipcodes
-		drop if strlength(zip)==3
+		drop if strlen(zip)==3
 
 		* Drop if no unique patient ID
 		drop if visitlink==.
