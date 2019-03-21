@@ -83,6 +83,9 @@ else {
 		* Drop 3 digit zipcodes
 		drop if strlength(zip)==3
 
+		* Drop if no unique patient ID
+		drop if visitlink==.
+
 		* reduce from discharge record level to patient level
 		keep visitlink zip mdc ahaid year
 		duplicates drop
@@ -128,6 +131,9 @@ else {
 		gen hhi_zm_w = hhi_zm * w_hosp
 			label var hhi_zm_w "Weighted zipcode-MDC HHI"
 		bysort ahaid_cd year: egen hhi_hosp = total(hhi_zm_w)
+
+	* Collapse to hospital-years
+
 
 	* Save
 	save "$proj_dir/ny_mergers/data_analytic/hhi_hospital.dta", replace
