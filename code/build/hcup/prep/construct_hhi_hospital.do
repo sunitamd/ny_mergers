@@ -92,6 +92,7 @@ else {
 		gen patient=1
 			label var patient "Unique patient count"
 
+		* merge on sysid for zipcode-MDC HHI calculation
 		merge m:1 ahaid year using `sysids', keep(3) nogen
 
 		* Encode string id variables for ftool functions
