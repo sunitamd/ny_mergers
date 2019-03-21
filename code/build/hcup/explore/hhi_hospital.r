@@ -4,6 +4,7 @@
 
 library(haven)
 library(tidyverse)
+library(RColorBrewer)
 
 
 ############################################
@@ -11,7 +12,14 @@ theme_set(theme_bw())
 
 
 ############################################
+# Data
 hhi <- read_dta('dump/hhi_hospital.dta')
+hcup <- read_dta('dump/hhi_ny_sid_supp_hosp.dta')
+hcup_ds <- hcup %>%
+	select(ahaid, discharges, discharges2, discharges3) %>%
+	group_by(ahaid) %>%
+		summarise_all(.funs='mean') %>%
+		ungroup()
 
 
 # Scatter HHI in 2006 vs HHI in 2012
@@ -39,11 +47,16 @@ ptemp <- hhi %>%
 		mutate(hhi1=first(hhi_hosp, order_by=year), hhi2=last(hhi_hosp, order_by=year)) %>%
 		ungroup() %>%
 	select(ahaid, hhi1, hhi2) %>%
-	distinct()
+	distinct() %>%
+	left_join(hcup_ds, by='ahaid')
 
-ggplot(ptemp, aes(x=hhi1, y=hhi2)) +
-	geom_point(alpha=0.7) +
+cols <- brewer.pal(9, 'YlGn')
+values <- quantile(ptemp$discharges2, probs=seq(.1,1,.1), na.rm=TRUE)
+
+ggplot(ptemp, aes(x=hhi1, y=hhi2, col=discharges2)) +
+	geom_point() +
 	geom_abline(slope=1, intercept=0, linetype='dashed', col='grey40') +
+	scale_color_gradientn('Total discharges', colors=cols) +
 	xlim(c(0,1.0)) +
 	ylim(c(0,1.0)) +
 	labs(title="Hospital-level HHI", x="HHI (first year)", y="HHI (last year)", caption='First & last year represent first and last year of observed data')
