@@ -12,7 +12,7 @@ set more off
 
 * User args
 local xvarOpt `1'
-	local avail_xvarOpts `""post_target", "hhi_hosp""'
+	local avail_xvarOpts `""post_target", "hhi_hosp", "hhi_avg_hhisys_cnty_T""'
 	if !inlist("`xvarOpt'", `avail_xvarOpts') {
 		di in red "! ! ! xvar: `xvar' IS NOT CURRENTLY SUPPORTED ! ! !"
 		di in red "* * * supported xvars are: `avail_xvarOpts' * * *"
@@ -105,9 +105,9 @@ use "$proj_dir/ny_mergers/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 	else if "`xvarOpt'" == "hhi_hosp" {
 		merge 1:1 ahaid year using `cov', keep(3) nogen
 	}
-
-	********************************************
-	* Bin average county system HHI into terciles
+	else if "`xvarOpt'" == "hhi_avg_hhisys_cnty_T" {
+		* Bin average county system HHI into terciles
+		********************************************
 		_pctile avg_hhisys_cnty if year == 2006, nquantiles(3)
 		local q1 = `r(r1)'
 		local q2 = `r(r2)'
@@ -125,6 +125,8 @@ use "$proj_dir/ny_mergers/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 		noisily di in red "... Tercile 1: " %6.3f `q1'
 		noisily di in red "... Tercile 2: " %6.3f `q2'
 		noisily di ""
+	}
+
 
 	********************************************
 	* Prep outcome variables
