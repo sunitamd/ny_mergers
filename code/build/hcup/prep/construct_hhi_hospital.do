@@ -65,9 +65,11 @@ save `sysids', replace
 * HCUP NY SID SUPP data
 ********************************************
 if `sample' {
+	* 10% random sample of HCUP NY SID SUPP
 	use "$proj_dir/ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp_sample.dta", clear
 }
 else {
+	* Full HCUP NY SID SUPP
 	use "$proj_dir/ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp.dta", clear
 }
 
@@ -76,13 +78,17 @@ else {
 	* Reduce to unique patients
 		keep if pay1==3
 
+		* Drop Foreign, Homeless, Invalid, Missing zipcodes
+		drop if inlist(zip, "", "A", "B", "C", "F", "H", "M")
+		* Drop 3 digit zipcodes
+		drop if strlength(zip)==3
+
 		* reduce from discharge record level to patient level
 		keep visitlink zip mdc ahaid year
 		duplicates drop
 		gen patient=1
 			label var patient "Unique patient count"
 
-		* join sysid, from(`sysids') by(ahaid year)
 		merge m:1 ahaid year using `sysids', keep(3) nogen
 
 		* Encode string id variables for ftool functions
