@@ -1,0 +1,57 @@
+global filepath /gpfs/data/desailab/code
+
+
+* Unzip HCUP supplemental files (?)
+	run unzip_hcupfiles
+
+* SAS: Read in supplemental HCUP files for merging
+	sas build/hcup/prep/NY_SID_2006_CHGS.sas 
+	sas build/hcup/prep/NY_SID_2006_DX_PR_GRPS.sas
+	sas build/hcup/prep/NY_SID_2006_SEVERITY.sas
+
+	sas build/hcup/prep/NY_SID_2007_CHGS.sas 
+	sas build/hcup/prep/NY_SID_2007_DX_PR_GRPS.sas
+	sas build/hcup/prep/NY_SID_2007_SEVERITY.sas
+
+	sas build/hcup/prep/NY_SID_2008_CHGS.sas 
+	sas build/hcup/prep/NY_SID_2008_DX_PR_GRPS.sas
+	sas build/hcup/prep/NY_SID_2008_SEVERITY.sas
+
+	sas build/hcup/prep/NY_SID_2009_CHGS.sas 
+	sas build/hcup/prep/NY_SID_2009_DX_PR_GRPS.sas
+	sas build/hcup/prep/NY_SID_2009_SEVERITY.sas
+	sas build/hcup/prep/NY_SID_2009_AHAL.sas 
+
+	sas build/hcup/prep/NY_SID_2010_CHGS.sas 
+	sas build/hcup/prep/NY_SID_2010_DX_PR_GRPS.sas
+	sas build/hcup/prep/NY_SID_2010_SEVERITY.sas
+
+	sas build/hcup/prep/NY_SID_2011_CHGS.sas 
+	sas build/hcup/prep/NY_SID_2011_DX_PR_GRPS.sas
+	sas build/hcup/prep/NY_SID_2011_SEVERITY.sas
+	sas build/hcup/prep/NY_SID_2011_AHAL.sas 
+
+	sas build/hcup/prep/NY_SID_2012_CHGS.sas 
+	sas build/hcup/prep/NY_SID_2012_DX_PR_GRPS.sas
+	sas build/hcup/prep/NY_SID_2012_SEVERITY.sas
+
+* SAS: Merge supplemental files to original HCUP data
+	* Merge AHA files 2009-2011 to HCUP files (early years already merged)
+		sas build/hcup/prep/merge_aha_core0911.sas
+
+	* Merge Revisit variables to HCUP-AHA for 2006-2008 (later years already merged)
+		sas build/hcup/prep/merge_aha_core0911.sas
+
+	* Merge other supplemental files  and append all years
+		sas build/hcup/prep/merge_supp_hcup.sas
+
+	* Export HCUP data to stata
+		sas build/hcup/merge/export_stata_hcup.sas
+
+**********************************************************************************
+* AHA data
+**********************************************************************************
+* Clean up AHA (Previously cleaned by Sarah) and Cooper mergers data
+	stata build/aha/prep/merge_ahacoop_sd.do <build/aha/prep/merge_ahacoop_sd>
+
+	stata build/aha/prep/construct_mergers_sd.do <build/aha/prep/construct_mergers_sd>	
