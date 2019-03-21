@@ -19,10 +19,14 @@ Measuring the impact of hospital mergers in New York State on quality of, access
 	|   |-- prep        - cleaning raw data
 	|   |-- explore     - exploratory data analysis
 	|   |-- analysis    - main analyses
-	|-- reports         - reports for internal meetings, communication
-	|-- shapefiles      - shapefiles
+	|-- dump            - scp files between Bigpurple & local (ignored)
+	|-- mapping	    - mapping scripts
 	|-- outputs	    - figures, tables, etc.
 	|-- public          - outputs for publication/external audiences
+	|-- reports         - reports for internal meetings, communication
+	|-- shapefiles      - shapefiles
+	|-- slurm 	    - scripts for slurm
+
 	
 	DATA
 	/gpfs/data/desailab/home/ny_mergers
