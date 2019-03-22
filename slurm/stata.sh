@@ -14,8 +14,8 @@ module load stata/15
 # Setup repo directory
 REPO=/gpfs/home/$USER/ny_mergers
 
-# Command line  arguments
-export STATA_DO="stata -b do \"$REPO/$1\""
+# Command line arguments
+export STATA_DO="stata -q do \"$REPO/$1\""
 shift
 export ARGS=$@
 
