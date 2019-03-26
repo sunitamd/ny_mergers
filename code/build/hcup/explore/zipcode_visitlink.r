@@ -25,5 +25,6 @@ ggplot(temp, aes(ahaid_cd, rate, col=log(ds))) +
     geom_point() +
     facet_wrap(~var, ncol=1, labeller=labeller(var=var_labels)) +
     scale_color_gradientn('Discharges (log)', colors=cols) +
+    theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
     labs(x='AHAID', y='Rate', title='Rate of discharges for:', caption='Rates & Discharges: total across all years')
 ggsave('outputs/zipcode_visitlink.pdf', device='pdf')
