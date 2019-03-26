@@ -16,10 +16,10 @@ Measuring the impact of hospital mergers in New York State on (1) quality of, (2
 	REPO
 	.
 	|-- code
-	|   |-- _source_        - subdir for each source
+	|   |-- analysis        - main analyses
+	|   |-- build           - subdir for each source
 	|   |   |-- prep            - prep clean, analytical data
 	|   |   |-- explore         - exploratory data analysis
-	|   |-- analysis        - main analyses
 	|-- dump            - scp files between Bigpurple & local (ignored)
 	|-- mapping	    - mapping scripts
 	|-- outputs	    - figures, tables, etc.
