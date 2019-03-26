@@ -1,17 +1,19 @@
 
 /*dowload all hospital level data*/
-. use "/gpfs/data/desailab/home/ny_mergers/data_hospclean/hospmerger_fin0210.dta> "
+. use "/gpfs/data/desailab/home/ny_mergers/data_hospclean/hospmerger_fin0210.dta> ", clear
+
+putpdf begin
 /*variable for post merger status for targeted hospitals*/
 . gen post_m_t= post_target == 1
 /*creates variable for non-merging hospitals based on hosp id* for target hospitals*/
-. egen non_m= min(post_target == 0 & post_acquirer==0), by(id)
+. bysort id: egen non_m= min(post_target == 0 & post_acquirer==0)
 /* generates variable for all hospitals that have merged, regardless of pre or post merger status, by hosp id*/
-. egen pre_post= max(post_target), by(id)
+.bysort id: egen pre_post= max(post_target)
 /*creates variable for only pre-merger status; must satisfy being a merger hospital (pre_post variable) and being not in a post state (post_target ==0)*/
 . gen pre_m_t= post_target==0 & pre_post==1
 /*follow same steps for aquirer; do not need non mergers since this remains the same*/
 gen post_m_a= post_acquirer == 1
-egen pre_post_a= max(post_acquirer), by(id)
+bysort id: egen pre_post_a= max(post_acquirer)
 gen pre_m_a= post_acquirer==0 & pre_post_a==1
 
 
@@ -36,9 +38,21 @@ by id: egen avg_merg_lat_a= mean(lat2)
 by id: egen avg_merg_lon_a= mean(lon2)
 tabstat avg_merg_lat_a avg_merg_lon_a if pre_post_a==1, by(id)
 
-/* ownerhip status for each stage of merger*/
-mean own_np2 own_fp2 own_gov2 if non_m==1
-mean own_np2 own_fp2 own_gov2 if pre_m_t==1
-mean own_np2 own_fp2 own_gov2 if post_m_t==1
-mean own_np2 own_fp2 own_gov2 if pre_m_a==1
-mean own_np2 own_fp2 own_gov2 if post_m_t==1
+/* creating single variable for ownership status*/
+ gen own_status= .
+replace own_status= 1 if own_np2==1
+replace own_status=2 if own_fp2==1
+replace own_status= 3 if own_gov2==1
+label define own_status_lbl 0"none" 1"Non-Profit" 2"For-Profit" 3"Government Owned"
+label values own_status own_status_lbl
+
+/* creates variable for merger status of all hospitals and labels them"*/
+gen merger_target_status= .
+replace merger_target_status= 1 if non_m==1
+replace merger_target_status= 2 if pre_m_t==1
+replace merger_target_status=3 if post_m_t==1
+label define merg_status_lbl 0"none" 1"Non-Merger" 2"Pre-Merger Target" 3"Post-Merger Target" 
+label values merger_target_status merg_status_lbl
+
+/* table of frequency for merger status based on ownership status*/
+table own_status merger_target_status
