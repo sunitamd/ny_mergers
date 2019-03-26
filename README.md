@@ -2,7 +2,7 @@
 
 2019
 
-Measuring the impact of hospital mergers in New York State on quality of, access to, and disparities in healthcare for low-income populations.
+Measuring the impact of hospital mergers in New York State on (1) quality of, (2) access to, and (3) disparities in healthcare for low-income populations.
 
 
 # Table of contents
