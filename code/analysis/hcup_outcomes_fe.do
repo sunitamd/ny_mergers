@@ -91,11 +91,15 @@ if `r(N)' > 0 {
 ********************************************
 use "$proj_dir/ny_mergers/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 
+	* Lookfor yvars
+	qui ds u_*_lg
+	local y_util_logs `r(varlist)'
+	qui ds u_*_pr
+	local y_util_props `r(varlist)'
+
+	* Labels for model output
 	label var year
 	label var avg_hhisys_cnty "HHI (sys, cnty avg)"
-
-	* Cnty fix for Lewis County General Hospital
-	replace cnty="3636049" if ahaid=="6212320" & cnty=="3636043"
 
 	********************************************
 	* Merge on covariates
@@ -129,56 +133,14 @@ use "$proj_dir/ny_mergers/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 	}
 
 
-	********************************************
-	* Prep outcome variables
-	********************************************
-		* Discharges
-			* Counts
-			local y_ds_cnts "discharges1 discharges2 discharges3 discharges4 discharges5"
-
-			* Proportions
-			foreach var of local y_ds_cnts {
-				gen `var'_pr = `var' / discharges
-
-				* Generate log outcomes for counts
-				gen `var'_lg = log(`var' + 1)
-			}
-			qui ds discharges*_lg
-			local y_ds_logs `r(varlist)'
-			qui ds discharges*_pr
-			local y_ds_props `r(varlist)'
-
-		* Service utilizations
-			* Totals
-			local y_util_totals "u_ed u_mhsa u_newbn u_cath u_nucmed u_observation u_organacq u_othimplants u_radtherapy"
-			
-			local y_util_cnts
-			foreach var of local y_util_totals {
-				forvalues i=1/5 {
-					* Counts
-					local y_util_cnts "`y_util_cnts' `var'`i'"
-					
-					* Proportions
-					gen `var'`i'_pr = `var'`i' / `var'
-
-					* Generate log outcomes for counts
-					gen `var'`i'_lg = log(`var'`i' + 1)
-				}
-			}
-			qui ds u_*_lg
-			local y_util_logs `r(varlist)'
-			qui ds u_*_pr
-			local y_util_props `r(varlist)'
-
 
 ********************************************
 * RUN MODELS
 ********************************************
 n di ""
 n di "* * * Model specifications * * *"
-n di "xvars: `xvars'"
-n di "panel var: `panelvar'"
-n di "cluster var: `cluster_var'"
+n di "xtset `panelvar' year"
+n di "xtreg outcome `xvars', fe vce(cluster `cluster_var')"
 n di ""
 
 	encode `panelvar', gen(`panelvar_id')
