@@ -11,8 +11,9 @@
 module purge
 module load stata/15
 
-# Setup repo directory
+# cd to repo directory
 REPO=/gpfs/home/$USER/ny_mergers
+cd $REPO
 
 # Command line arguments
 export STATA_DO="stata -q do \"$REPO/$1\""
