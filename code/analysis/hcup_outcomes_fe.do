@@ -13,7 +13,7 @@ set more off
 
 * User args
 local xvarOpt `1'
-	local avail_xvarOpts `""post_target", "hhi_hosp", "hhi_avg_hhisys_cnty_T""'
+	local avail_xvarOpts `""post_target", "hhi_hosp", "avg_hhisys_cnty_T""'
 	if !inlist("`xvarOpt'", `avail_xvarOpts') {
 		di in red "! ! ! xvar: `xvar' IS NOT CURRENTLY SUPPORTED ! ! !"
 		di in red "* * * supported xvars are: `avail_xvarOpts' * * *"
@@ -79,6 +79,11 @@ else if "`xvarOpt'" == "hhi_hosp" {
 	********************************************
 	use "$proj_dir/ny_mergers/data_analytic/hhi_hospital.dta", clear
 }
+else if "`xvarOpt'" == "avg_hhisys_cnty_T" {
+	* Average county system-HHI terciles
+	********************************************
+	use "$proj_dir/ny_mergers/data_analytic/hhisys_terciles.dta", clear
+}
 
 * Some covariates already in HCUP NY SID SUPP data
 count
@@ -87,11 +92,15 @@ if `r(N)' > 0 {
 	save `cov', replace
 }
 
-* HCUP NY SID SUPP
+* HCUP NY SID Outcomes
 ********************************************
-use "$proj_dir/ny_mergers/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
+use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", clear
 
 	* Lookfor yvars
+	qui ds discharges*_lg
+    local y_ds_logs `r(varlist)'
+    qui ds discharges*_pr
+    local y_ds_props `r(varlist)'
 	qui ds u_*_lg
 	local y_util_logs `r(varlist)'
 	qui ds u_*_pr
@@ -111,6 +120,7 @@ use "$proj_dir/ny_mergers/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 		merge 1:1 ahaid year using `cov', keep(3) nogen
 	}
 	else if "`xvarOpt'" == "hhi_avg_hhisys_cnty_T" {
+		merge 1:1 ahaid year using `cov', assert(3) nogen
 		* Bin average county system HHI into terciles
 		********************************************
 		_pctile avg_hhisys_cnty if year == 2006, nquantiles(3)
