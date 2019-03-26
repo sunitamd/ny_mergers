@@ -1,6 +1,6 @@
 
 /*dowload all hospital level data*/
-. use "/gpfs/data/desailab/home/ny_mergers/data_hospclean/hospmerger_fin0210.dta> ", clear
+. use "/gpfs/data/desailab/home/ny_mergers/data_hospclean/hospmerger_fin0210.dta", clear
 
 putpdf begin
 /*variable for post merger status for targeted hospitals*/
