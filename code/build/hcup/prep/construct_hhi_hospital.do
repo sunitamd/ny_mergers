@@ -1,5 +1,6 @@
 ********************************************
 * Construct hospital-level hhi measures
+* Resource allocation: mem=128GB, time=1hour
 ********************************************
 
 clear
