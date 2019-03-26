@@ -38,6 +38,7 @@ ggplot(ptemp, aes(x=year_2006, y=year_2012)) +
 	xlim(c(0,1.0)) +
 	ylim(c(0,1.0)) +
 	labs(title="Hospital-level HHI", x="HHI (2006)", y="HHI (2012)", caption=caption_na)
+ggsave('outputs/hhi_hospital_scatter1.pdf', device='pdf')
 
 # Scatter HHI in first observered year vs HHI in last observed year
 ############################################
@@ -61,4 +62,5 @@ ggplot(ptemp, aes(x=hhi1, y=hhi2, col=discharges_lg)) +
 	ylim(c(0,1.0)) +
 	facet_wrap(~pay, ncol=1) +
 	labs(title="Hospital-level HHI", x="HHI (first year)", y="HHI (last year)", caption='(1) First, last year: first, last year of observed data for each hospital\n(2) Discharges: avg discharges per year')
+ggsave('outputs/hhi_hospital_scatter2.pdf', device='pdf')
 
