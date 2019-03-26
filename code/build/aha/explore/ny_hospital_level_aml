@@ -1,0 +1,55 @@
+/*dowload ny hospital level data*/
+. use "/gpfs/data/desailab/home/ny_mergers/data_hospclean/hospmerger_ny_fin0210.dta", clear
+/*variable for post merger status for targeted hospitals*/
+. gen post_m_t_ny= post_target == 1
+/*creates variable for non-merging hospitals based on hosp id* for target hospitals*/
+. bysort id: egen non_m_ny= min(post_target == 0 & post_acquirer==0)
+/* generates variable for all hospitals that have merged, regardless of pre or post merger status, by hosp id*/
+.bysort id: egen pre_post_ny= max(post_target)
+/*creates variable for only pre-merger status; must satisfy being a merger hospital (pre_post variable) and being not in a post state (post_target ==0)*/
+. gen pre_m_t_ny= post_target==0 & pre_post_ny==1
+/*follow same steps for aquirer; do not need non mergers since this remains the same*/
+gen post_m_a_ny= post_acquirer == 1
+bysort id: egen pre_post_a_ny= max(post_acquirer)
+gen pre_m_a_ny= post_acquirer==0 & pre_post_a_ny==1
+
+
+/*table stats for non-merged hospitals*/
+tabstat non_m_ny nbeds mcrdc2 mcddc2 techtotal2 if non_m_ny==1, statistics( mean sd median )
+/*table stats for pre-merger target hospitals*/
+tabstat pre_m_t_ny nbeds mcrdc2 mcddc2 techtotal2 if pre_m_t_ny==1, statistics( mean sd median )
+/* table stats for post-merger target hospitals*/
+tabstat post_m_t_ny nbeds mcrdc2 mcddc2 techtotal2 if post_m_t_ny==1, statistics( mean sd median )
+/* table stats for pre-merger acquirer hospitals*/
+tabstat pre_m_a_ny nbeds mcrdc2 mcddc2 techtotal2 if pre_m_a_ny==1, statistics( mean sd median )
+/* table stats for post-merger acquirer hospitals*/
+tabstat post_m_a_ny nbeds mcrdc2 mcddc2 techtotal2 if post_m_a_ny==1, statistics( mean sd median )
+
+/* creating variables for the average ie. the same lat and lon for each merged target hospital; then listing this*/ 
+by id: egen avg_merg_lat_t= mean(lat2)
+by id: egen avg_merg_lon_t= mean(lon2)
+tabstat avg_merg_lat_t avg_merg_lon_t if pre_post_ny==1, by(id)
+
+/*doing same lat and lon avg for the aqcuirers*/
+by id: egen avg_merg_lat_a= mean(lat2)
+by id: egen avg_merg_lon_a= mean(lon2)
+tabstat avg_merg_lat_a avg_merg_lon_a if pre_post_a_ny==1, by(id)
+
+/* creating single variable for ownership status*/
+ gen own_status_ny= .
+replace own_status_ny= 1 if own_np2==1
+replace own_status_ny=2 if own_fp2==1
+replace own_status_ny= 3 if own_gov2==1
+label define own_status_lbl_ny 0"none" 1"Non-Profit" 2"For-Profit" 3"Government Owned"
+label values own_status_ny own_status_lbl_ny
+
+/* creates variable for merger status of all hospitals and labels them"*/
+gen merger_target_status_ny= .
+replace merger_target_status_ny= 1 if non_m_ny==1
+replace merger_target_status_ny= 2 if pre_m_t_ny==1
+replace merger_target_status_ny=3 if post_m_t_ny==1
+label define merg_status_lbl_ny 0"none" 1"Non-Merger" 2"Pre-Merger Target" 3"Post-Merger Target" 
+label values merger_target_status_ny merg_status_lbl_ny
+
+/* table of frequency for merger status based on ownership status*/
+table own_status_ny merger_target_status_ny
