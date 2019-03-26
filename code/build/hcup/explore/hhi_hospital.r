@@ -48,16 +48,18 @@ ptemp <- hhi %>%
 		ungroup() %>%
 	select(ahaid, hhi1, hhi2) %>%
 	distinct() %>%
-	left_join(hcup_ds, by='ahaid')
+	left_join(hcup_ds, by='ahaid') %>%
+	gather(pay, discharges, discharges:discharges3, na.rm=TRUE) %>%
+	mutate(pay=case_when(pay=='discharges' ~ 'Total', pay=='discharges2' ~ 'Medicaid', TRUE ~ 'Private Ins.'), discharges_lg=log(discharges))
 
-cols <- brewer.pal(9, 'YlGn')
-values <- quantile(ptemp$discharges2, probs=seq(.1,1,.1), na.rm=TRUE)
-
-ggplot(ptemp, aes(x=hhi1, y=hhi2, col=discharges2)) +
+cols <- rev(brewer.pal(8, 'BuPu'))
+values <- scales::rescale(round(quantile(log(ptemp$discharges), seq(0.0,1,0.1), 0)))
+ggplot(ptemp, aes(x=hhi1, y=hhi2, col=discharges_lg)) +
 	geom_point() +
 	geom_abline(slope=1, intercept=0, linetype='dashed', col='grey40') +
-	scale_color_gradientn('Total discharges', colors=cols) +
+	scale_color_gradientn('log discharges', colors=cols) +
 	xlim(c(0,1.0)) +
 	ylim(c(0,1.0)) +
+	facet_wrap(~pay, ncol=1) +
 	labs(title="Hospital-level HHI", x="HHI (first year)", y="HHI (last year)", caption='First & last year represent first and last year of observed data')
 ggsave('outputs/hhi_hospital_scatter2.pdf', device='pdf')
