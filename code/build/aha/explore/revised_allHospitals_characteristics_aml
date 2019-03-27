@@ -1,58 +1,36 @@
-
-/*dowload all hospital level data*/
-. use "/gpfs/data/desailab/home/ny_mergers/data_hospclean/hospmerger_fin0210.dta", clear
-
-putpdf begin
-/*variable for post merger status for targeted hospitals*/
-. gen post_m_t= post_target == 1
-/*creates variable for non-merging hospitals based on hosp id* for target hospitals*/
-. bysort id: egen non_m= min(post_target == 0 & post_acquirer==0)
-/* generates variable for all hospitals that have merged, regardless of pre or post merger status, by hosp id*/
-.bysort id: egen pre_post= max(post_target)
-/*creates variable for only pre-merger status; must satisfy being a merger hospital (pre_post variable) and being not in a post state (post_target ==0)*/
-. gen pre_m_t= post_target==0 & pre_post==1
-/*follow same steps for aquirer; do not need non mergers since this remains the same*/
-gen post_m_a= post_acquirer == 1
+/*working directory*/
+cd "/gpfs/data/desailab/home/ny_mergers/data_hospclean"
+/*data set*/
+use "/gpfs/data/desailab/home/ny_mergers/data_hospclean/hospmerger_fin0210.dta", clear
+/*variable for hospitals never merged*/
+bysort id: egen non_m= min(post_target == 0 & post_acquirer==0)
+/*create variable for any target hospital that has mergered, regarless of pre-post status*/
+bysort id: egen pre_post= max(post_target)
+/*specifically creates variable for pre-merger target hospitals*/
+gen pre_m_t= post_target==0 & pre_post==1
+/*same process for the acquirers*/
 bysort id: egen pre_post_a= max(post_acquirer)
 gen pre_m_a= post_acquirer==0 & pre_post_a==1
 
-
-/*table stats for non-merged hospitals*/
-tabstat non_m nbeds mcrdc2 mcddc2 techtotal2 if non_m==1, statistics( mean sd median )
-/*table stats for pre-merger target hospitals*/
-tabstat pre_m_t nbeds mcrdc2 mcddc2 techtotal2 if pre_m_t==1, statistics( mean sd median )
-/* table stats for post-merger target hospitals*/
-tabstat post_m_t nbeds mcrdc2 mcddc2 techtotal2 if post_m_t==1, statistics( mean sd median )
-/* table stats for pre-merger acquirer hospitals*/
-tabstat pre_m_a nbeds mcrdc2 mcddc2 techtotal2 if pre_m_a==1, statistics( mean sd median )
-/* table stats for post-merger acquirer hospitals*/
-tabstat post_m_a nbeds mcrdc2 mcddc2 techtotal2 if post_m_a==1, statistics( mean sd median )
-
-/* creating variables for the average ie. the same lat and lon for each merged target hospital; then listing this*/ 
-by id: egen avg_merg_lat_t= mean(lat2)
-by id: egen avg_merg_lon_t= mean(lon2)
-tabstat avg_merg_lat_t avg_merg_lon_t if pre_post==1, by(id)
-
-/*doing same lat and lon avg for the aqcuirers*/
-by id: egen avg_merg_lat_a= mean(lat2)
-by id: egen avg_merg_lon_a= mean(lon2)
-tabstat avg_merg_lat_a avg_merg_lon_a if pre_post_a==1, by(id)
-
-/* creating single variable for ownership status*/
- gen own_status= .
-replace own_status= 1 if own_np2==1
-replace own_status=2 if own_fp2==1
-replace own_status= 3 if own_gov2==1
-label define own_status_lbl 0"none" 1"Non-Profit" 2"For-Profit" 3"Government Owned"
+/*create one combined variable to differentitate hospitals based on ownership; label*/
+gen own_status= .
+replace own_status= 0 if own_np2==1
+replace own_status=1 if own_fp2==1
+replace own_status= 2 if own_gov2==1
+label define own_status_lbl 0"Non-Profit" 1"For-Profit" 2"Government Owned"
 label values own_status own_status_lbl
 
-/* creates variable for merger status of all hospitals and labels them"*/
-gen merger_target_status= .
-replace merger_target_status= 1 if non_m==1
-replace merger_target_status= 2 if pre_m_t==1
-replace merger_target_status=3 if post_m_t==1
-label define merg_status_lbl 0"none" 1"Non-Merger" 2"Pre-Merger Target" 3"Post-Merger Target" 
-label values merger_target_status merg_status_lbl
+/*create one variable for the merger status of target and acquired hospitals; label*/
+gen merger_status= .
+replace merger_status= 0 if non_m==1
+replace merger_status= 1 if pre_m_t==1
+replace merger_status=2 if post_target==1
+replace merger_status= 3 if pre_m_a==1
+replace merger_status=4 if post_acquirer==1
+label define merg_status_lbl 0"Non-Merger" 1"Pre-Merger Target" 2"Post-Merger Target" 3"Pre-Merger Acquirer" 4"Post-Merger Acquirer"
+label values merger_status merg_status_lbl
 
-/* table of frequency for merger status based on ownership status*/
-table own_status merger_target_status
+/*variable for proportion of medicaid patients that are from total admission*/
+gen prop_medicaid= mcddc2/admtot2
+/*table with different variables of interest for merger and ownership status*/
+table own_status, contents(mean admtot2 mean mcddc2 mean prop_medicaid mean teaching2 ) by(merger_status)
