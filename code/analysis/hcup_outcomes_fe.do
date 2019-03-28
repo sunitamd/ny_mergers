@@ -81,7 +81,7 @@ else if "`xvarOpt'" == "hhi_hosp" {
 else if "`xvarOpt'" == "hhi_avg_hhisys_cnty_T" {
 	local xvars "i.hhi_avg_hhisys_cnty_T"
 }
-local xvars "`xvars' i.year"
+local xvars "`xvars' i.year total_enroll"
 local panelvar ahaid
 local panelvar_id "`panelvar'_id"
 local cluster_var cnty
@@ -119,6 +119,32 @@ else if "`xvarOpt'" == "avg_hhisys_cnty_T" {
 tempfile cov
 save `cov', replace
 
+	* Bring in county Medicaid enrollment
+	use "$proj_dir/ny_mergers/data_hospclean/mmc_totals.dta", clear
+
+	collapse (sum) total_enroll, by(county year)
+
+	keep if year>=2006 & year<=2012
+
+	tempfile mmc
+	save `mmc', replace
+
+	* NY County FIPS Codes
+	import excel using "$proj_dir/ny_mergers/inputs/ny_fips.xlsx", clear firstrow
+
+	gen cnty = "3636" + string(cnty_fips, "%03.0f")
+
+	replace county = subinstr(county, " County", "", .)
+	replace county = "St Lawrence" if county=="St. Lawrence"
+	replace county = "NYC" if inlist(county, "Bronx", "Kings", "New York", "Queens", "Richmond")
+
+	joinby county using `mmc'
+	* data check: assert we have 62 counties * 7 years
+	qui count
+	assert `r(N)' == 62 * 7
+
+	save `mmc', replace
+
 
 * HCUP NY SID Outcomes
 ********************************************
@@ -149,6 +175,10 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", clear
 	else if "`xvarOpt'" == "hhi_avg_hhisys_cnty_T" {
 		merge 1:1 ahaid year using `cov', assert(3) nogen
 	}
+
+	merge m:1 cnty year using `mmc', assert(3) nogen
+
+
 
 	********************************************
 	* Drop hospital-years below discharge minimum threshold
