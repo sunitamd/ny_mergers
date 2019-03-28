@@ -43,8 +43,8 @@ local scratch_dir "/gpfs/scratch/azc211/ny_mergers"
 local today: di %tdCCYYNNDD date(c(current_date), "DMY")
 
 * Filepaths
-local log_file "`scratch_dir'/logs/hcup_outcomes_fe_`today'.smcl"
-local log_file_pdf "reports/hcup_outcomes_fe.pdf"
+local log_file "`scratch_dir'/logs/hcup_outcomes_`xvarOpt'_`today'.smcl"
+local log_file_pdf "reports/hcup_outcomes_`xvarOpt'.pdf"
 
 * Labels and misc.
 local pay_labels `""Medicare" "Medicaid" "PrivIns" "SelfPay" "NoCharge" "Other" "Missing""'
