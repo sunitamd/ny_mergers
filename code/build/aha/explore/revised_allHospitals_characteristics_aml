@@ -1,3 +1,6 @@
+log using log_us_descr, replace
+
+quietly
 /*working directory*/
 cd "/gpfs/data/desailab/home/ny_mergers/data_hospclean"
 /*data set*/
@@ -32,5 +35,6 @@ label values merger_status merg_status_lbl
 
 /*variable for proportion of medicaid patients that are from total admission*/
 gen prop_medicaid= mcddc2/admtot2
-/*table with different variables of interest for merger and ownership status*/
-table own_status, contents(mean admtot2 mean mcddc2 mean prop_medicaid mean teaching2 ) by(merger_status)
+/*table with different variables of interest for merger and ownership status; second table is freq of merger status by ownership in type of location (rural/metro)*/
+noisily table own_status, contents(mean admtot2 mean mcddc2 mean prop_medicaid mean teaching2 ) by(merger_status)
+noisily table own_status cbsatype, by(merger_status)

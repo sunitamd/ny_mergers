@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --partition=fn_medium
 #SBATCH --time=1-0
-#SBATCH --mem=129GBGB
+#SBATCH --mem=128GB
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
