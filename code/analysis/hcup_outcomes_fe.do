@@ -166,6 +166,9 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", clear
 	********************************************
 	* Merge on covariates
 
+	* County Medicaid enrollment
+	merge m:1 cnty year using `mmc', assert(2 3) keep(3) nogen
+
 	if "`xvarOpt'" == "post_anytarget" {
 		merge m:1 cnty year using `cov', assert(3) nogen
 	}
@@ -176,7 +179,6 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", clear
 		merge 1:1 ahaid year using `cov', assert(3) nogen
 	}
 
-	merge m:1 cnty year using `mmc', assert(3) nogen
 
 
 
