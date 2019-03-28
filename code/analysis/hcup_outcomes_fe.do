@@ -33,6 +33,17 @@ if _rc {
 		break
 	}
 }
+* analytical weight switch
+local aweight `3'
+if "`aweight'" == "" local aweight 0
+if !inlist(`aweight', 0, 1) {
+	di in red "! ! ! aweight option must be one of {0, 1} ! ! !"
+	break
+}
+else {
+	if `aweight' == 1 local aweight_text "_aweight"
+	else local aweight_text ""
+}
 
 
 * Directories
@@ -43,8 +54,8 @@ local scratch_dir "/gpfs/scratch/azc211/ny_mergers"
 local today: di %tdCCYYNNDD date(c(current_date), "DMY")
 
 * Filepaths
-local log_file "`scratch_dir'/logs/hcup_outcomes_`xvarOpt'_`today'.smcl"
-local log_file_pdf "reports/hcup_outcomes_`xvarOpt'.pdf"
+local log_file "`scratch_dir'/logs/hcup_outcomes_`xvarOpt'`aweight_text'_`today'.smcl"
+local log_file_pdf "reports/hcup_outcomes_`xvarOpt'`aweight_text'.pdf"
 
 * Labels and misc.
 local pay_labels `""Medicare" "Medicaid" "PrivIns" "SelfPay" "NoCharge" "Other" "Missing""'
@@ -139,6 +150,13 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", clear
 	n di ". . . dropping all hosp-years with less than `hosp_year_ds_min' discharges . . ."
 	drop if discharges < `hosp_year_ds_min'
 
+	********************************************
+	* Analytical weights
+	if "`a_weights'" == 1 {
+		bysort ahaid: egen discharges_year = mean(discharges)
+			label var discharges_year "Avg. discharges per year"
+	}
+
 
 ********************************************
 * RUN MODELS
@@ -180,7 +198,7 @@ n di ""
 			local title: word `i' of `pay_labels'
 			local ++i
 
-			qui xtreg `yvar' `xvars', fe vce(cluster `panelvar_id')
+			qui xtreg `yvar' `xvars', fe vce(cluster `cluster_var')
 				estimates store `model', title(`title')
 		}
 		* Output model estimates
@@ -204,7 +222,7 @@ n di ""
 				local ++i
 			}
 
-			qui xtreg `yvar' `xvars', fe vce(cluster `panelvar_id')
+			qui xtreg `yvar' `xvars', fe vce(cluster `cluster_var')
 			estimates store `model', title(`title')
 		}
 		* Output model estimates
@@ -248,7 +266,7 @@ n di ""
 				local ++i
 			}
 
-			qui xtreg `yvar' `xvars', fe vce(cluster `panelvar_id')
+			qui xtreg `yvar' `xvars', fe vce(cluster `cluster_var')
 			estimates store `model', title(`title')
 		}
 		* Output model estimates
