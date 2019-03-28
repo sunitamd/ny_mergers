@@ -1,6 +1,11 @@
 ********************************************
 * Run fixed effects regression of HCUP NY SID SUPP outcomes on specified independent variables
-* NOTE: xvars must be specified through command line argument!
+* NOTE: this script requires 3 user arguments:
+*		1: xvar, name of xvar for model
+*		2: hospital-year discharge minimum
+*		3: aweight switch 0/1
+* Sample run command:
+*	sbatch -t 0-1 --mem=8GB slurm/stata.sh code/analysis/hcup_outcomes_fe.do "hhi_hosp" 80 1
 ********************************************
 
 clear
