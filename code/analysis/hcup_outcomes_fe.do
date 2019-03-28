@@ -152,7 +152,7 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", clear
 
 	********************************************
 	* Analytical weights
-	if `a_weights' {
+	if `aweight' == 1 {
 		bysort ahaid: egen discharges_year = mean(discharges)
 			label var discharges_year "Avg. discharges per year"
 	}
