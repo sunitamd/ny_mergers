@@ -41,8 +41,8 @@ if !inlist(`aweight', 0, 1) {
 	break
 }
 else {
-	if `aweight' == 1 local aweight_text "_aweight"
-	else local aweight_text ""
+	if `aweight' == 1 local _aweight "_aweight"
+	else local _aweight ""
 }
 
 
@@ -54,8 +54,8 @@ local scratch_dir "/gpfs/scratch/azc211/ny_mergers"
 local today: di %tdCCYYNNDD date(c(current_date), "DMY")
 
 * Filepaths
-local log_file "`scratch_dir'/logs/hcup_outcomes_`xvarOpt'`aweight_text'_`today'.smcl"
-local log_file_pdf "reports/hcup_outcomes_`xvarOpt'`aweight_text'.pdf"
+local log_file "`scratch_dir'/logs/hcup_outcomes_`xvarOpt'`_aweight'_`today'.smcl"
+local log_file_pdf "reports/hcup_outcomes_`xvarOpt'`_aweight'.pdf"
 
 * Labels and misc.
 local pay_labels `""Medicare" "Medicaid" "PrivIns" "SelfPay" "NoCharge" "Other" "Missing""'
@@ -155,17 +155,20 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", clear
 	if `aweight' == 1 {
 		bysort ahaid: egen discharges_year = mean(discharges)
 			label var discharges_year "Avg. discharges per year"
+
+		local aweight [aweight=discharges_year]
 	}
 
 
 ********************************************
 * RUN MODELS
 ********************************************
-n di ""
+n di "* * *"
 n di "* * * Model specifications * * *"
 n di "xtset `panelvar' year"
-n di "xtreg outcome `xvars', fe vce(cluster `cluster_var')"
-n di ""
+if "`aweight'" == "" n di "xtreg outcome `xvars', fe vce(cluster `cluster_var')"
+else n di "xtreg outcome `xvars' [aweight=discharges_year], fe vce(cluster `cluster_var')"
+n di "* * *"
 
 	encode `panelvar', gen(`panelvar_id')
 	xtset `panelvar_id' year, yearly
@@ -183,7 +186,7 @@ n di ""
 			local title: word `i' of `pay_labels'
 			local ++i
 
-			qui xtreg `yvar' `xvars', fe vce(cluster `cluster_var')
+			xtreg `yvar' `xvars' `aweight', fe vce(cluster `cluster_var')
 			estimates store `model', title(`title')
 		}
 		noisily estout `models', title(Discharges (log counts)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
@@ -198,7 +201,7 @@ n di ""
 			local title: word `i' of `pay_labels'
 			local ++i
 
-			qui xtreg `yvar' `xvars', fe vce(cluster `cluster_var')
+			xtreg `yvar' `xvars' `aweight', fe vce(cluster `cluster_var')
 				estimates store `model', title(`title')
 		}
 		* Output model estimates
@@ -222,7 +225,7 @@ n di ""
 				local ++i
 			}
 
-			qui xtreg `yvar' `xvars', fe vce(cluster `cluster_var')
+			xtreg `yvar' `xvars' `aweight', fe vce(cluster `cluster_var')
 			estimates store `model', title(`title')
 		}
 		* Output model estimates
@@ -266,7 +269,7 @@ n di ""
 				local ++i
 			}
 
-			qui xtreg `yvar' `xvars', fe vce(cluster `cluster_var')
+			xtreg `yvar' `xvars' `aweight', fe vce(cluster `cluster_var')
 			estimates store `model', title(`title')
 		}
 		* Output model estimates
