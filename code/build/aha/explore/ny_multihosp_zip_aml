@@ -1,0 +1,11 @@
+/*working directory*/
+cd "/gpfs/data/desailab/home/ny_mergers/data_hospclean"
+/*data set*/
+use "/gpfs/data/desailab/home/ny_mergers/data_hospclean/hospmerger_ny_fin0210.dta", clear
+/*tagging distinct IDs, w/ the first orccurence of a distinct ID=1 and the rest=0*/
+egen tag = tag(id provzip2)
+/*per each zipcode, totalling up amt of distinct ids*/
+egen distinct = total(tag), by(provzip2)
+/*tables for # of individual ids per zipcode and freq of 1,2,3 hospitals within zipcode*/
+tabdisp provzip2, cell(distinct)
+tabulate distinct

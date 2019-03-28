@@ -1,6 +1,19 @@
 global filepath /gpfs/data/desailab/code
 
 
+**********************************************************************************
+* AHA data
+**********************************************************************************
+* Clean up AHA (Previously cleaned by Sarah) and Cooper mergers data
+	stata build/aha/prep/merge_ahacoop_sd.do <build/aha/prep/merge_ahacoop_sd>
+
+* Construct merger, system-HHI, event-study, and market-exposure measures
+	stata build/aha/prep/construct_mergers_sd.do <build/aha/prep/construct_mergers_sd>
+	
+
+**********************************************************************************
+* HCUP data
+**********************************************************************************
 * Unzip HCUP supplemental files (?)
 	run unzip_hcupfiles
 
@@ -48,10 +61,25 @@ global filepath /gpfs/data/desailab/code
 	* Export HCUP data to stata
 		sas build/hcup/merge/export_stata_hcup.sas
 
-**********************************************************************************
-* AHA data
-**********************************************************************************
-* Clean up AHA (Previously cleaned by Sarah) and Cooper mergers data
-	stata build/aha/prep/merge_ahacoop_sd.do <build/aha/prep/merge_ahacoop_sd>
+* Construct working/analytical datasets
+	* Merge AHA merger/HHI with HCUP
+		stata build/hcup/prep/merge_hhi_ny_sid_supp.do
 
-	stata build/aha/prep/construct_mergers_sd.do <build/aha/prep/construct_mergers_sd>	
+	* Collapse AHA x HCUP data to hospital-level
+		stata build/hcup/prep/collapse_hhi_ny_sid_sup.do
+
+	* Construct HCUP outcomes
+		stata build/hcup/prep/construct_outcomes.do
+
+	* Construct system-HHI terciles
+		stata build/hcup/prep/construct_hhisys_terciles.do
+
+	* Construct hospital-HHI
+		stata build/hcup/prep/construct_hhi_hospital.do
+
+
+**********************************************************************************
+* MMC data
+**********************************************************************************
+* Import and append monthly county-level Medicaid enrollment (Orin)
+	stata build/mmc/prep/combine_mmc.do
