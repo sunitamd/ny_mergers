@@ -26,9 +26,6 @@ local outcome_vars
 * Data
 use "$proj_dir/ny_mergers/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 
-    * Cnty fix for Lewis County General Hospital
-    replace cnty="3636049" if ahaid=="6212320" & cnty=="3636043"
-
     ********************************************
     * Prep outcome variables
     ********************************************

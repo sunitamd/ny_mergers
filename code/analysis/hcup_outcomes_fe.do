@@ -161,8 +161,9 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", clear
 		bysort ahaid: egen discharges_year = mean(discharges)
 			label var discharges_year "Avg. discharges per year"
 
-		local aweight [aweight=discharges_year]
+		local aweight_opt [aweight=discharges_year]
 	}
+	else local aweight_opt ""
 
 
 ********************************************
@@ -191,7 +192,7 @@ n di "* * *"
 			local title: word `i' of `pay_labels'
 			local ++i
 
-			xtreg `yvar' `xvars' `aweight', fe vce(cluster `cluster_var')
+			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
 			estimates store `model', title(`title')
 		}
 		noisily estout `models', title(Discharges (log counts)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
@@ -206,7 +207,7 @@ n di "* * *"
 			local title: word `i' of `pay_labels'
 			local ++i
 
-			xtreg `yvar' `xvars' `aweight', fe vce(cluster `cluster_var')
+			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
 				estimates store `model', title(`title')
 		}
 		* Output model estimates
@@ -230,7 +231,7 @@ n di "* * *"
 				local ++i
 			}
 
-			xtreg `yvar' `xvars' `aweight', fe vce(cluster `cluster_var')
+			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
 			estimates store `model', title(`title')
 		}
 		* Output model estimates
@@ -274,7 +275,7 @@ n di "* * *"
 				local ++i
 			}
 
-			xtreg `yvar' `xvars' `aweight', fe vce(cluster `cluster_var')
+			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
 			estimates store `model', title(`title')
 		}
 		* Output model estimates
