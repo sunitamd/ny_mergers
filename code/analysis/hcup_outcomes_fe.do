@@ -12,13 +12,28 @@ set more off
 ********************************************
 
 * User args
+* xvar for model
 local xvarOpt `1'
-	local avail_xvarOpts `""post_target", "hhi_hosp", "avg_hhisys_cnty_T""'
-	if !inlist("`xvarOpt'", `avail_xvarOpts') {
-		di in red "! ! ! xvar: `xvar' IS NOT CURRENTLY SUPPORTED ! ! !"
-		di in red "* * * supported xvars are: `avail_xvarOpts' * * *"
+local avail_xvarOpts `""post_target", "hhi_hosp", "avg_hhisys_cnty_T""'
+if !inlist("`xvarOpt'", `avail_xvarOpts') {
+	di in red "! ! ! xvar: `xvar' IS NOT CURRENTLY SUPPORTED ! ! !"
+	di in red "* * * supported xvars are: `avail_xvarOpts' * * *"
+	break
+}
+* hospital-year discharge minimum threshold
+local hosp_year_ds_min `2'
+cap confirm number `hosp_year_ds_min'
+if _rc {
+	if "`hosp_year_ds_min'" == "" {
+		local hosp_year_ds_min 0
+	}
+	else {
+		di in red "! ! ! hospital-year discharge min. must be numeric ! ! !"
+		di in red "* * * user specified: `hosp_year_ds_min'"
 		break
 	}
+}
+
 
 * Directories
 global proj_dir "/gpfs/data/desailab/home"
@@ -85,12 +100,9 @@ else if "`xvarOpt'" == "avg_hhisys_cnty_T" {
 	use "$proj_dir/ny_mergers/data_analytic/hhisys_terciles.dta", clear
 }
 
-* Some covariates already in HCUP NY SID SUPP data
-count
-if `r(N)' > 0 {
-	tempfile cov
-	save `cov', replace
-}
+tempfile cov
+save `cov', replace
+
 
 * HCUP NY SID Outcomes
 ********************************************
@@ -108,7 +120,6 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", clear
 
 	* Labels for model output
 	label var year
-	label var avg_hhisys_cnty "HHI (sys, cnty avg)"
 
 	********************************************
 	* Merge on covariates
@@ -121,27 +132,12 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", clear
 	}
 	else if "`xvarOpt'" == "hhi_avg_hhisys_cnty_T" {
 		merge 1:1 ahaid year using `cov', assert(3) nogen
-		* Bin average county system HHI into terciles
-		********************************************
-		_pctile avg_hhisys_cnty if year == 2006, nquantiles(3)
-		local q1 = `r(r1)'
-		local q2 = `r(r2)'
-
-		assert avg_hhisys_cnty != .
-		gen avg_hhisys_cnty_T = 1 if avg_hhisys_cnty <= `q1'
-		replace avg_hhisys_cnty_T = 2 if avg_hhisys_cnty > `q1' & avg_hhisys_cnty <= `q2'
-		replace avg_hhisys_cnty_T = 3 if avg_hhisys_cnty > `q2'
-		assert avg_hhisys_cnty_T != .
-		label var avg_hhisys_cnty_T "Cnty avg. HHI sys tercile"
-
-		noisily di ""
-		noisily di in red "* * * avg_hhisys_cnty terciles for 2006 * * "
-		noisily di ""
-		noisily di in red "... Tercile 1: " %6.3f `q1'
-		noisily di in red "... Tercile 2: " %6.3f `q2'
-		noisily di ""
 	}
 
+	********************************************
+	* Drop hospital-years below discharge minimum threshold
+	n di ". . . dropping all hosp-years with less than `hosp_year_ds_min' discharges . . ."
+	drop if discharges < `hosp_year_ds_min'
 
 
 ********************************************
@@ -212,8 +208,8 @@ n di ""
 			estimates store `model', title(`title')
 		}
 		* Output model estimates
-			* Medicaid services
-			noisily di in red ". . . Medicaid services . . ."
+			* Medicaid associated services
+			noisily di in red ". . . Medicaid associated services . . ."
 			local i 1
 			foreach util of local util_medicaid {
 				local models
@@ -223,10 +219,10 @@ n di ""
 				local title: word `i' of `util_medicaid_labels'
 				local ++i
 
-				noisily estout `models', title(Medicaid Service Util: `title' (log counts)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
+				noisily estout `models', title(Service Util: `title' (log counts)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
 			}
-			* Private insurance services
-			noisily di in red ". . . Private insurance services . . ."
+			* Private insurance associated services
+			noisily di in red ". . . Private insurance associated services . . ."
 			local i 1
 			foreach util of local util_privins {
 				local models
@@ -236,7 +232,7 @@ n di ""
 				local title: word `i' of `util_privins_labels'
 				local ++i
 
-				noisily estout `models', title(Private Insurance Service Util: `title' (log counts)) cell(b(star fmt(2)) se(par fmt(2)))  legend label varlabels(_cons Constant)
+				noisily estout `models', title(Service Util: `title' (log counts)) cell(b(star fmt(2)) se(par fmt(2)))  legend label varlabels(_cons Constant)
 			}
 
 		********************************************
@@ -267,7 +263,7 @@ n di ""
 				local title: word `i' of `util_medicaid_labels'
 				local ++i
 
-				noisily estout `models', title(Medicaid Service Util: `title' (proportions)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
+				noisily estout `models', title(Service Util: `title' (proportions)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
 			}
 			* Private insurance services
 			noisily di in red ". . . Private insurance services . . ."
@@ -280,7 +276,7 @@ n di ""
 				local title: word `i' of `util_privins_labels'
 				local ++i
 
-				noisily estout `models', title(Private Insurance Service Util: `title' (proportions)) cell(b(star fmt(2)) se(par fmt(2)))  legend label varlabels(_cons Constant)
+				noisily estout `models', title(Service Util: `title' (proportions)) cell(b(star fmt(2)) se(par fmt(2)))  legend label varlabels(_cons Constant)
 			}
 
 ********************************************
