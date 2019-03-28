@@ -72,7 +72,7 @@ use "$proj_dir/ny_mergers/data_hospclean/hhi_ny_sid_supp_hosp.dta", clear
 * SAVE
 ********************************************
     
-    keep ahaid cnty year `y_ds_cnts' `y_util_totals' `outcome_vars'
+    keep ahaid cnty year discharges `y_ds_cnts' `y_util_totals' `outcome_vars'
 
 save "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", replace
         
