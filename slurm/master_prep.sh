@@ -86,16 +86,16 @@ cd $REPO
         stata -q do codebuild/hcup/prep/merge_hhi_ny_sid_supp.do
 
     # Collapse AHA x HCUP data to hospital-level
-       stata -q do code/build/hcup/prep/collapse_hhi_ny_sid_sup.do
+        stata -q do code/build/hcup/prep/collapse_hhi_ny_sid_sup.do
 
     # Construct HCUP outcomes
-       stata -q do code/build/hcup/prep/construct_outcomes.do
+        stata -q do code/build/hcup/prep/construct_outcomes.do
 
     # Construct system-HHI terciles
-       stata -q do code/build/hcup/prep/construct_hhisys_terciles.do
+        stata -q do code/build/hcup/prep/construct_hhisys_terciles.do
 
     # Construct hospital-HHI
-       stata -q do code/build/hcup/prep/construct_hhi_hospital.do
+        stata -q do code/build/hcup/prep/construct_hhi_hospital.do
 
 
 ############################################
