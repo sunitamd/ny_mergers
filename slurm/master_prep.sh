@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --partition=fn_medium
 #SBATCH --time=1-0
-#SBATCH --mem=128GB
+#SBATCH --mem=129GBGB
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
@@ -13,7 +13,7 @@ module purge
 module load sas/9.4
 module load stata/15
 
-# REPO
+# REPO - Users must have this folder in their user directory
 ############################################
 REPO=/gpfs/home/$USER/ny_mergers
 cd $REPO
@@ -82,20 +82,20 @@ cd $REPO
         sas code/build/hcup/merge/export_stata_hcup.sas
 
 # Construct working/analytical datasets
-    # Merge AHA merger/HHI with HCUP
+    # Merge AHA merger/HHI (bed-based) with HCUP
         stata -q do codebuild/hcup/prep/merge_hhi_ny_sid_supp.do
 
     # Collapse AHA x HCUP data to hospital-level
-        stata -q do code/build/hcup/prep/collapse_hhi_ny_sid_sup.do
+       stata -q do code/build/hcup/prep/collapse_hhi_ny_sid_sup.do
 
     # Construct HCUP outcomes
-        stata -q do code/build/hcup/prep/construct_outcomes.do
+       stata -q do code/build/hcup/prep/construct_outcomes.do
 
     # Construct system-HHI terciles
-        stata -q do code/build/hcup/prep/construct_hhisys_terciles.do
+       stata -q do code/build/hcup/prep/construct_hhisys_terciles.do
 
-    # Construct hospital-HHI
-        stata -q do code/build/hcup/prep/construct_hhi_hospital.do
+    # Construct hospital-varying patient-based HHI
+       stata -q do code/build/hcup/prep/construct_hhi_hospital.do
 
 
 ############################################

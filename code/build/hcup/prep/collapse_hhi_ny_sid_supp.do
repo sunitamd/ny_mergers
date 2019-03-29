@@ -47,6 +47,7 @@ use "`proj_dir'/data_hospclean/hhi_ny_sid_supp.dta", clear
 		qui lookfor u_
 		local util_vars `r(varlist)'
 	* Dichotamize utilitization variables for summing
+		* Original utilization flags were either revenue code, procedure code, CCS
 		foreach var of varlist `util_vars' {
 			replace `var' = 1 if `var'>0 & `var'!=.
 		}

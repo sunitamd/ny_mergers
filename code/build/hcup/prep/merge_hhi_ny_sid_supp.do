@@ -22,7 +22,7 @@ log using "`log_file'", replace
 
 * Data
 
-* Market-level HHI data
+* Market-level HHI data --> !*! We can combine this and the next step because market-level HHI variables are in the hospital-level data also 
 di in red "...prepping market-level HHI data..."
 use "`proj_dir'/data_hospclean/ny_treatcontrol_Feb 12.dta", clear
 
@@ -42,6 +42,7 @@ use "`proj_dir'/data_hospclean/hospmerger_ny_fin0210.dta", clear
 	label var _merge1 "_merge results btwn AHA & Cooper"
 
 * Merge market-level HHI data
+* Asser that there are merges at the market-level
 di in red "...merging market-level HHI to hospital-level HHI"
 	merge m:1 cnty year using `market_hhi', assert(3) nogen
 
