@@ -38,3 +38,5 @@ gen prop_medicaid= mcddc2/admtot2
 /*table with different variables of interest for merger and ownership status; second table is freq of merger status by ownership in type of location (rural/metro)*/
 noisily table own_status, contents(mean admtot2 mean mcddc2 mean prop_medicaid mean teaching2 ) by(merger_status)
 noisily table own_status cbsatype, by(merger_status)
+/* tables for each merger status, with summary stats for descriptive variables*/
+by merger_status, sort : summarize admtot2 mcddc2 prop_medicaid teaching2 own_np2 own_fp2 own_gov2
