@@ -81,7 +81,7 @@ else if "`xvarOpt'" == "hhi_hosp" {
 else if "`xvarOpt'" == "hhi_avg_hhisys_cnty_T" {
 	local xvars "i.hhi_avg_hhisys_cnty_T"
 }
-local xvars "`xvars' i.year total_enroll"
+local xvars "`xvars' i.year total_enroll_log"
 local panelvar ahaid
 local panelvar_id "`panelvar'_id"
 local cluster_var cnty
@@ -123,6 +123,8 @@ save `cov', replace
 	use "$proj_dir/ny_mergers/data_hospclean/mmc_totals.dta", clear
 
 	collapse (sum) total_enroll, by(county year)
+
+	gen total_enroll_log = log(total_enroll)
 
 	keep if year>=2006 & year<=2012
 
@@ -178,9 +180,6 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", clear
 	else if "`xvarOpt'" == "hhi_avg_hhisys_cnty_T" {
 		merge 1:1 ahaid year using `cov', assert(3) nogen
 	}
-
-
-
 
 	********************************************
 	* Drop hospital-years below discharge minimum threshold
