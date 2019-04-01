@@ -14,13 +14,13 @@ if _rc==111 ssc install ftools
 ********************************************
 
 * Directories
-global proj_dir "/gpfs/data/desailab/home/ny_mergers"
+global proj_dir "/gpfs/data/desailab/home"
 
 ********************************************
 * RUN PROGRAM
 ********************************************
 
-use "$proj_dir/data_sidclean/sid_work/ny_sid_0612_supp.dta", clear
+use "$proj_dir/ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp.dta", clear
 
     * Patient-level variables
         gen discharges = 1
@@ -28,7 +28,7 @@ use "$proj_dir/data_sidclean/sid_work/ny_sid_0612_supp.dta", clear
         
         * Collapse newborn utilizations
         egen u_newbn = rowtotal(u_newbn*), missing
-        order u_bewbn, before(u_newbn2l)
+        order u_newbn, before(u_newbn2l)
         drop u_newbn2l u_newb3l u_newbn4l
 
         qui lookfor u_
@@ -50,6 +50,6 @@ use "$proj_dir/data_sidclean/sid_work/ny_sid_0612_supp.dta", clear
 * SAVE
 ********************************************
 
-save "$proj_dir/data_analytic/hcup_ny_sid_utils.dta", replace
-!chmod g+rw "$proj_dir/data_analytic/hcup_ny_sid_utils.dta"
+save "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_utils.dta", replace
+!chmod g+rw "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_utils.dta"
 
