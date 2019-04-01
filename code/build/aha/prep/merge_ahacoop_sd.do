@@ -113,38 +113,5 @@
 		
 	save "$proj_dir/ny_mergers/data_hospclean/ahacooperall_cleaned.dta", replace
 	!chmod g+rw "$proj_dir/ny_mergers/data_hospclean/ahacooperall_cleaned.dta"
-	
-************************************************!!!!!!!!!!!!!!!!!!!
-* !!!!Explore the unmerged Cooper data set (_merge== 1)
-************************************************!!!!!!!!!!!!!!!!!!!!!
 
-* Remove non-overlapping years
-	drop if year ==2000 | year > 2014
-		
-	* No longer an issue after using imputed..
-	*	* Are these hospitals that were outside the US?
-
-* Understand the unmerged from AHA data set 
-	count if _merge == 2
-	unique id if _merge == 2
-	tab serv if _merge == 2
-	tab fstcd if _merge== 2
-		
-	tab _merge
-	
-	gen merge_sarah = cond(merge != . & merge!= 0,1,0)
-	
-	* How much of the difference is due to system ID issues? Des not make sense since she has much fewer
-	* System ID would lead to MORE mergers
-	
-	* When conditioning on matched observations Cooper has more mergers 
-		bysort id (year): gen merge_sunita2 = 1 if sysid2 != sysid2[_n-1] & year >2001
-		bysort id (year): gen merge_sunita = 1 if sysid != sysid[_n-1] & year >2001
-		tab merge_sunita if year > 2001
-		tab merge_sunita2 if year > 2001
-		drop merge_sunit*
-			
-
-
-	
 	
