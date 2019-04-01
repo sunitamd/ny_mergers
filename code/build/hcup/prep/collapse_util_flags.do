@@ -46,6 +46,9 @@ use "$proj_dir/ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp.dta", clear
     * Collapse data
         fcollapse (sum) discharges `util_vars', by(ahaid_cd year pay1) fast
 
+        decode ahaid_cd, gen(ahaid)
+        drop ahaid_cd
+
 ********************************************
 * SAVE
 ********************************************
