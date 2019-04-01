@@ -1,0 +1,230 @@
+. quietly 
+. cd "/gpfs/data/desailab/home/ny_mergers/data_hospclean"
+. use "/gpfs/data/desailab/home/ny_mergers/data_hospclean/hospmerger_ny_fin0210
+> .dta", clear
+. egen tag = tag(id provzip2)
+. egen distinct = total(tag), by(provzip2)
+. noisily tabdisp provzip2, cell(distinct)
+
+----------------------
+5 Digit   |
+Zip Code  |   distinct
+----------+-----------
+    10003 |          2
+    10011 |          1
+    10016 |          1
+    10019 |          2
+    10021 |          2
+    10025 |          1
+    10029 |          2
+    10035 |          1
+    10037 |          1
+    10038 |          1
+    10065 |          1
+    10075 |          1
+    10305 |          1
+    10310 |          1
+    10451 |          1
+    10456 |          1
+    10457 |          1
+    10461 |          2
+    10466 |          1
+    10467 |          2
+    10512 |          1
+    10522 |          1
+    10549 |          1
+    10550 |          1
+    10567 |          1
+    10591 |          1
+    10595 |          1
+    10601 |          1
+    10701 |          1
+    10708 |          1
+    10801 |          1
+    10901 |          1
+    10960 |          1
+    10990 |          1
+    11030 |          1
+    11040 |          1
+    11102 |          1
+    11201 |          2
+    11203 |          3
+    11206 |          1
+    11212 |          1
+    11213 |          1
+    11215 |          1
+    11219 |          1
+    11220 |          1
+    11228 |          1
+    11229 |          1
+    11235 |          1
+    11237 |          1
+    11355 |          2
+    11373 |          1
+    11375 |          2
+    11418 |          1
+    11432 |          2
+    11501 |          1
+    11542 |          1
+    11554 |          1
+    11561 |          1
+    11570 |          1
+    11572 |          1
+    11580 |          1
+    11691 |          2
+    11706 |          1
+    11714 |          1
+    11743 |          1
+    11772 |          1
+    11777 |          2
+    11787 |          1
+    11791 |          1
+    11794 |          1
+    11795 |          1
+    11803 |          1
+    11901 |          1
+    11944 |          1
+    11968 |          1
+    12010 |          2
+    12043 |          1
+    12078 |          1
+    12180 |          2
+    12204 |          1
+    12208 |          2
+    12304 |          1
+    12308 |          1
+    12401 |          2
+    12428 |          1
+    12455 |          1
+    12534 |          1
+    12572 |          1
+    12601 |          2
+    12723 |          1
+    12742 |          1
+    12771 |          1
+    12801 |          1
+    12866 |          1
+    12883 |          1
+    12901 |          1
+    12932 |          1
+    12953 |          1
+    12983 |          1
+    13021 |          1
+    13045 |          1
+    13069 |          1
+    13126 |          1
+    13203 |          1
+    13210 |          2
+    13215 |          1
+    13326 |          1
+    13346 |          1
+    13365 |          1
+    13367 |          1
+    13421 |          1
+    13440 |          1
+    13501 |          1
+    13502 |          1
+    13601 |          1
+    13607 |          1
+    13619 |          1
+    13642 |          1
+    13662 |          1
+    13669 |          1
+    13676 |          1
+    13690 |          1
+    13753 |          1
+    13815 |          1
+    13820 |          1
+    13856 |          1
+    13903 |          1
+    13905 |          1
+    14020 |          1
+    14048 |          1
+    14070 |          1
+    14081 |          1
+    14092 |          1
+    14094 |          1
+    14103 |          1
+    14108 |          1
+    14141 |          1
+    14203 |          1
+    14214 |          1
+    14215 |          1
+    14217 |          1
+    14220 |          1
+    14225 |          1
+    14301 |          1
+    14302 |          1
+    14420 |          1
+    14424 |          1
+    14432 |          1
+    14437 |          1
+    14456 |          1
+    14513 |          1
+    14527 |          1
+    14569 |          1
+    14620 |          1
+    14621 |          1
+    14626 |          1
+    14642 |          1
+    14701 |          1
+    14702 |          1
+    14727 |          1
+    14760 |          1
+    14787 |          1
+    14810 |          1
+    14830 |          1
+    14843 |          1
+    14850 |          1
+    14865 |          1
+    14895 |          1
+    14901 |          1
+    14902 |          1
+    14905 |          1
+----------------------
+. noisily tabulate distinct
+
+   distinct |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |        993       81.26       81.26
+          2 |        209       17.10       98.36
+          3 |         20        1.64      100.00
+------------+-----------------------------------
+      Total |      1,222      100.00
+. log translate log_ny_zip.smlc log_ny_zip.pdf
+file log_ny_zip.smlc not found
+. log close
+. log using log_ny_zip
+. quietly 
+. cd "/gpfs/data/desailab/home/ny_mergers/data_hospclean"
+. use "/gpfs/data/desailab/home/ny_mergers/data_hospclean/hospmerger_ny_fin0210
+> .dta", clear
+. egen tag = tag(id provzip2)
+. egen distinct = total(tag), by(provzip2)
+. noisily tabdisp provzip2, cell(distinct)
+. noisily tabulate distinct
+. log translate v.smcl log_ny_zip.pdf
+. log close
+. log using log_ny_zip
+. quietly 
+. cd "/gpfs/data/desailab/home/ny_mergers/data_hospclean"
+. use "/gpfs/data/desailab/home/ny_mergers/data_hospclean/hospmerger_ny_fin0210
+> .dta", clear
+. egen tag = tag(id provzip2)
+. egen distinct = total(tag), by(provzip2)
+. noisily tabdisp provzip2, cell(distinct)
+. noisily tabulate distinct
+. log translate v.smcl log_ny_zip.pdf
+. log close
+. cd "/gpfs/data/desailab/home/ny_mergers/data_hospclean"
+. use "/gpfs/data/desailab/home/ny_mergers/data_hospclean/hospmerger_ny_fin0210
+> .dta", clear
+. egen tag = tag(id provzip2)
+. egen distinct = total(tag), by(provzip2)
+. noisily tabdisp provzip2, cell(distinct)
+. noisily tabulate distinct
+. clear
+. exit, clear
+. exit, clear
+. exit, clear
+. exit, clear
