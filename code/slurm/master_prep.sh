@@ -82,11 +82,11 @@ cd $REPO
         sas code/build/hcup/merge/export_stata_hcup.sas
 
 # Construct working/analytical datasets
-    # Merge AHA merger/HHI (bed-based) with HCUP
-        stata -q do codebuild/hcup/prep/merge_hhi_ny_sid_supp.do
+    # Collapse to MDC-zipcode-payer-hospital-year level
+        stata -q do codebuild/hcup/prep/collapse_hcup_ny_sid_supp.do
 
-    # Collapse AHA x HCUP data to hospital-level
-       stata -q do code/build/hcup/prep/collapse_hhi_ny_sid_sup.do
+    # Collapse discharges & utilization flags to payer-hospital-year level
+       stata -q do code/build/hcup/prep/collapse_util_flags.do
 
     # Construct HCUP outcomes
        stata -q do code/build/hcup/prep/construct_outcomes.do
