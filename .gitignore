@@ -1,6 +1,7 @@
 code/temp/
 data/
 dump/
+logs/
 *.DS_Store
 
 # History files
