@@ -27,7 +27,7 @@ use "$proj_dir/data_sidclean/sid_work/ny_sid_0612_supp.dta", clear
         replace pay1 = 7 if pay1==.
         
         * Collapse newborn utilizations
-        egen u_newbn = rowtotal(u_newbn*), misisng
+        egen u_newbn = rowtotal(u_newbn*), missing
         order u_bewbn, before(u_newbn2l)
         drop u_newbn2l u_newb3l u_newbn4l
 
