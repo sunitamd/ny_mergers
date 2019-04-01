@@ -163,6 +163,7 @@ use "$proj_dir/ny_mergers/data_hospclean/ahacooperall_whhi.dta", clear
 
 	save "$proj_dir/ny_mergers/data_analytic/market_exposure.dta", replace
 	!chmod g+rw "$proj_dir/ny_mergers/data_analytic/market_exposure.dta"
+
 	
 ****************************************
 * Collapse to market-level data set
@@ -224,3 +225,28 @@ capture drop post_`mrg'`wind'
 	
 	save "$proj_dir/ny_mergers/data_hospclean/ny_treatcontrol_Feb 12.dta", replace
 	!chmod g+rw "$proj_dir/ny_mergers/data_hospclean/ny_treatcontrol_Feb 12.dta"
+
+
+********************************************
+* Create system HHI terciles
+********************************************
+
+_pctile avg_hhisys_cnty if year==2006, nquantiles(3)
+local q1 = `r(r1)'
+local q2 = `r(r2)'
+
+assert avg_hhisys_cnty != .
+
+gen avg_hhisys_cnty_T = 1 if avg_hhisys_cnty <= `q1'
+replace avg_hhisys_cnty_T = 2 if avg_hhisys_cnty > `q1' & avg_hhisys_cnty <= `q2'
+replace avg_hhisys_cnty_T = 3 if avg_hhisys_cnty > `q2'
+
+assert avg_hhisys_cnty_T != .
+
+label var avg_hhisys_cnty_T "Avg. county system HHI tercile, 2006"
+
+keep cnty year avg_hhisys_cnty_T
+
+save "$proj_dir/ny_mergers/data_analytic/hhisys_terciles.dta", replace
+!chmod g+rw "$proj_dir/ny_mergers/data_analytic/hhisys_terciles.dta"
+	
