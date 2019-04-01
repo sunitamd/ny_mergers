@@ -5,8 +5,9 @@
 clear
 set more off
 
-* Install ftools (fast collapse function for large data)
-cap ssc install ftools
+* Check for ftools
+cap which ftools
+if _rc==111 ssc install ftools
 
 
 ********************************************
