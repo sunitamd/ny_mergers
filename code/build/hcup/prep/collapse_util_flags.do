@@ -29,7 +29,7 @@ use "$proj_dir/ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp.dta", clear
         * Collapse newborn utilizations
         egen u_newbn = rowtotal(u_newbn*), missing
         order u_newbn, before(u_newbn2l)
-        drop u_newbn2l u_newb3l u_newbn4l
+        drop u_newbn2l u_newbn3l u_newbn4l
 
         qui lookfor u_
         local util_vars `r(varlist)'
