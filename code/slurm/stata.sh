@@ -5,7 +5,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
-#SBATCH --output=/gpfs/scratch/%u/slurm/slurm_%j.out
+#SBATCH --output=logs/slurm/slurm_%j.out
 
 # Load modules
 module purge
