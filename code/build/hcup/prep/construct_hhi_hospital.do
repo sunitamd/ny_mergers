@@ -7,40 +7,21 @@ clear
 set more off
 
 
+* Check for ftools package
+cap which ftools
+_rc==111 ssc install ftools
+
 ********************************************
 * MACROS
 ********************************************
 
-* User arguments
-local sample `1'
-if "`sample'"=="" local sample 0
-if !inlist(`sample', 0, 1) {
-	di in red "! ! ! User argument, if given, must be one of {0, 1} ! ! !"
-	break
-}
-
 * Directories
 global proj_dir "/gpfs/data/desailab/home"
-global scratch_dir "/gpfs/scratch/azc211/ny_mergers"
-
-* Date
-local today: di %tdCCYYNNDD date(c(current_date), "DMY")
-
-* Log file
-local log_file "$scratch_dir/logs/construct_hhi_hospital_`today'.smcl"
 
 
 ********************************************
 * RUN PROGRAM
 ********************************************
-
-cap log close
-log using `log_file', replace
-
-* Check for ftools package
-	cap which ftools
-	if _rc==111 ssc install ftools
-
 
 * Get sysids from AHA-Cooper dataset
 ********************************************
@@ -65,14 +46,7 @@ save `sysids', replace
 
 * HCUP NY SID SUPP data
 ********************************************
-if `sample' {
-	* 10% random sample of HCUP NY SID SUPP
-	use "$proj_dir/ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp_sample.dta", clear
-}
-else {
-	* Full HCUP NY SID SUPP
-	use "$proj_dir/ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp.dta", clear
-}
+use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_supp_collapsed.dta", clear
 
 * Standard HHI (share of commercially-insured patients within each zipcode-MDC combination)
 ********************************************
@@ -80,12 +54,12 @@ else {
 		keep if pay1==3
 
 		* Drop Foreign, Homeless, Invalid, Missing zipcodes
-		drop if inlist(zip, "", "A", "B", "C", "F", "H", "M")
+		drop if inlist(zip, "missing", "A", "B", "C", "F", "H", "M")
 		* Drop 3 digit zipcodes
 		drop if strlen(zip)==3
 
 		* Drop if no unique patient ID
-		drop if visitlink==.
+		drop if visitlink==9
 
 		* reduce from discharge record level to patient level
 		keep visitlink zip mdc ahaid year
@@ -144,7 +118,4 @@ else {
 
 	* Save
 	save "$proj_dir/ny_mergers/data_analytic/hhi_hospital.dta", replace
-
-
-********************************************
-log close
+	!chmod g+rw "$proj_dir/ny_mergers/data_analytic/hhi_hospital.dta"
