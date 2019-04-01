@@ -32,13 +32,13 @@ use "$proj_dir/ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp.dta", clear
     gen discharge = 1
 
     * Prep string by vars for fcollapse
-    local string_by_vars zip ahaid visitlink
+    local string_by_vars zip ahaid
     foreach var of local string_by_vars {
         encode `var', gen(`var'_cd)
     }
 
     * Collapse data
-    fcollapse (sum) discharges=discharge, by(ahaid_cd year mdc zip_cd pay1 visitlink_cd) fast
+    fcollapse (sum) discharges=discharge, by(ahaid_cd year mdc zip_cd pay1 visitlink) fast
 
     foreach var of local string_by_vars {
         decode `var'_cd, gen(`var')
