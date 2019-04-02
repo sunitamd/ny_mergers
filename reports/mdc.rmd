@@ -38,7 +38,7 @@ pay_cols <- brewer.pal(6, 'Paired')
 
 mdc <- readRDS('dump/mdc.rds')
 mdc_spread <- spread(mdc, pay1, ds, fill=0) %>%
-    mutate(total=Medicare+Medicaid+Private+SelfPay+NoCharge+Other,medicaid_pr=Medicaid/total, private_pr=Private/total)
+    mutate(total=Medicare+Medicaid+Private+SelfPay+NoCharge+Other,medicaid_pr=Medicaid/total, private_pr=Private/total, mdcd_pri=Medicaid/Private)
 mdc <- left_join(mdc, mdc_spread, by='mdc') %>%
     mutate(medicaid_pr=Medicaid/ds)
 mdc_kmeans_data <- mdc_spread %>%
@@ -55,13 +55,22 @@ Analyzing MDC codes from all admissions in HCUP NY SID 2006-2012.
 
 # Bar plots {.tabset .tabset-fade}
 
+## Ordered by ratio of Medicaid to Private Insurance admissions
+
+```{r bar plot ratio, include=TRUE}
+ggplot(mdc, aes(reorder(mdc, -mdcd_pri), ds, fill=pay1)) +
+    geom_col() +
+    scale_fill_manual('Payer', values=pay_cols) +
+    labs(x='MDC', y='Discharges')
+```
+
 ## Ordered by proportion of Medicaid admissions
 
 ```{r bar plot pr, include=TRUE, fig.width=7, fig.height=7}
 ggplot(mdc, aes(reorder(mdc, -medicaid_pr), ds, fill=pay1)) +
     geom_col() +
     scale_fill_manual('Payer', values=pay_cols) +
-    labs(x='MDC', y='Discharges', caption='Arranged by descending Medicaid admissions proportion')
+    labs(x='MDC', y='Discharges')
 ```
 
 ## Ordered by counts of Medicaid admission
@@ -70,19 +79,19 @@ ggplot(mdc, aes(reorder(mdc, -medicaid_pr), ds, fill=pay1)) +
 ggplot(mdc, aes(reorder(mdc, -Medicaid), ds, fill=pay1)) +
     geom_col() +
     scale_fill_manual('Payer', values=pay_cols) +
-    labs(x='MDC', y='Discharges', caption='Arranged by descending Medicaid admission counts')
+    labs(x='MDC', y='Discharges')
 ```
 
 
-# K-means clustering
+# K-means
 
 ## Background & Algorithm
 
 K-means clustering classifies MDCs into _k_ groups such that MDCs within the same cluster are as similar as possible, and MDCs from different clusters are as dissimilar as possible.
 For our data, similarity is represented by the number of discharges/admissions from each payer type.
 
-```{r, include=TRUE, cols.print=8, rows.print=5}
-mdc_spread
+```{r, include=TRUE, cols.print=8, rows.print=26}
+mdc_kmeans_data
 ```
 
 K-means defines clusters by trying to minimize the total within-cluster variation. The standard algorithm (Hartigan-Wong (1979)) defines the within-cluster variation as the sum of squared Euclidean distances between each MDC and its corresponding cluster centroid:
