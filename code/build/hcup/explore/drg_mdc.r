@@ -2,8 +2,8 @@
 # Investigate distribution of DRG & MDC codes in HCUP
 ############################################
 
-library(haven)
 library(tidyverse)
+library(ggrepel)
 library(factoextra)
 library(gridExtra)
 library(RColorBrewer)
@@ -35,6 +35,7 @@ pay_cols <- brewer.pal(6, 'Paired')
 
 if (Sys.info()['sysname'] == 'unix') {
     if (sample) {
+        library(haven)
         hcup <- read_dta(paste0(proj_dir, 'ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp_sample.dta'))
     } else {
         hcup <- readRDS(paste0(proj_dir, 'ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp_sample.rds'))
@@ -43,11 +44,13 @@ if (Sys.info()['sysname'] == 'unix') {
     hcup <- readRDS('dump/ny_sid_0612_supp.rds')
 }
 
+mdc_labels <- c('Pre-MDC', 'Nervous', 'Eye', 'Ear,Nose,Mouth,Throat', 'Respiratory', 'Circulatory', 'Digestive', 'Hepatobiliary & Pancreas', 'Musculoskeletal', 'Skin', 'Endocrine', 'Kidney/UT', 'Male Reprod.', 'Female Reprod.', 'Pregnancy', 'Newborn', 'Blood/Immunological', 'Myeloproliferative', 'Infections/Parasitic', 'Mental', 'Alcohol/Drug', 'Injuries/Poision', 'Burns', 'Health Status/Services', 'Trauma', 'HIV')
+names(mdc_labels) <- 0:25
+
 ############################################
 # RUN PROGRAM
 ############################################
 
-plot.list <- list(length=2)
 
 # Collapse mdc codes by payer
 mdc <- hcup %>%
@@ -58,11 +61,10 @@ mdc <- hcup %>%
 mdc_spread <- spread(mdc, pay1, ds, fill=0)
 mdc <- left_join(mdc, mdc_spread, by='mdc')
 
-ptemp <- ggplot(mdc, aes(reorder(mdc, -Medicaid), ds, fill=pay1)) +
+ggplot(mdc, aes(reorder(mdc, -Medicaid), ds, fill=pay1)) +
     geom_col() +
     scale_fill_manual('Payer', values=pay_cols) +
     labs(x='MDC', y='Discharges', caption='Discharges for all HCUP years')
-plot.list[[1]] <- ptemp
 
 # Collapse drg codes by payer
 drg <- hcup %>%
@@ -77,15 +79,11 @@ drg <- left_join(drg, drg_spread, by='drg')
 
 medicaid_top10 <- quantile(drg$Medicaid, 0.90)
 
-ptemp <- ggplot(drg %>% filter(Medicaid>medicaid_top10), aes(reorder(drg, -Medicaid), ds, fill=pay1)) +
+ggplot(drg %>% filter(Medicaid>medicaid_top10), aes(reorder(drg, -Medicaid), ds, fill=pay1)) +
     geom_col() +
     scale_fill_manual('Payer', values=pay_cols) +
     labs(x='DRG Codes', y='Discharges', caption='Discharges for all HCUP years') +
     theme(axis.ticks.x=element_blank(), axis.text.x=element_blank())
-plot.list[[2]] <- ptemp
-
-plots <- do.call(marrangeGrob, c(plot.list, list(nrow=1, ncol=1)))
-ggsave("outputs/mdc_drg/plots.pdf", plots, device='pdf')
 
 
 ############################################
@@ -99,29 +97,50 @@ ggsave("outputs/mdc_drg/plots.pdf", plots, device='pdf')
 
 # MDC
 ############################################
-df <- scale(mdc_spread)
+df <- as.data.frame(mdc_spread[,-1])
+rownames(df) <- mdc_labels
 
 set.seed(8)
 
-mdc_ks <- lapply(2:15, function(k, .df=df) {
-    kmeans(.df[,-1], k, iter.max=100, nstart=25)
+mdc_kmeans <- lapply(2:15, function(k, .df=df) {
+    kmeans(.df, k, iter.max=100, nstart=25)
 })
 
 # plot kmeans clusters
-mdc_plots <- lapply(1:5, function(i, .kmeans=mdc_ks, .df=df) {
-    fviz_cluster(.kmeans[[i]], geom='point', data=.df) + ggtitle(paste0('k=',i+1))
+mdc_plots <- lapply(2:7, function(k, .kmeans=mdc_kmeans, .df=df) {
+    fviz_cluster(.kmeans[[k-1]], geom='text', data=.df, repel=TRUE, labelsize=8) + ggtitle(paste0('k=',k))
 })
-grid.arrange(mdc_plots[[1]], mdc_plots[[2]], mdc_plots[[3]], mdc_plots[[4]], mdc_plots[[5]], nrow=3)
+grid.arrange(grobs=mdc_plots, ncol=3)
+
+# custom cluster plot
+mdc_gplots <- lapply(2:7, function(k, .kmeans=mdc_kmeans, .df=df) {
+    temp <- .df
+    temp$cluster <- factor(.kmeans[[k-1]]$cluster)
+    temp$mdc <- rownames(temp)
+    temp <- arrange(temp, Medicaid, Private)
+    temp_chull <- temp %>%
+        group_by(cluster) %>%
+            slice(chull(Medicaid, Private))
+
+    ggplot(temp, aes(Medicaid, Private, color=cluster)) +
+        geom_point(pch=8) +
+        geom_text_repel(aes(label=mdc), size=3, segment.size=0.2, segment.alpha=0.4) +
+        geom_polygon(data=temp_chull, aes(color=cluster, group=cluster, fill=cluster), alpha=0.3) +
+        guides(color=FALSE, fill=FALSE) +
+        labs(title=paste0('k=',k))
+})
+grid.arrange(grobs=mdc_gplots, ncol=3)
+
 
 # elbow plot
-mdc_wss <- lapply(mdc_ks, function(kmean) kmean$tot.withinss)
+mdc_wss <- lapply(mdc_kmeans, function(kmean) kmean$tot.withinss)
 plot(2:15, mdc_wss,
        type="b", pch = 19, frame = FALSE, 
        xlab="Number of clusters K",
        ylab="Total within-clusters sum of squares")
 
 # silhouelette plot
-mdc_sils <- lapply(mdc_ks, function(kmean, .df=df) {
+mdc_sils <- lapply(mdc_kmeans, function(kmean, .df=df) {
     ss <- silhouette(kmean$cluster, dist(.df))
     mean(ss[,3])
 })
