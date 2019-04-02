@@ -53,7 +53,19 @@ Find MDCs associated with Medicaid and/or Private Insurance payer types.
 Analyzing MDC codes from all admissions in HCUP NY SID 2006-2012.
 
 
-# Bar plots {.tabset .tabset-fade}
+# Plots {.tabset .tabset-fade}
+
+## Scatterplot
+
+```{r scatter, include=TRUE}
+temp <- mdc_spread %>%
+    mutate(desc=mdc_labels)
+
+ggplot(temp, aes(Medicare, Private)) +
+    geom_point(pch=8, alpha=0.8, col='dodgerblue4') +
+    geom_text_repel(aes(label=desc), size=3, segment.size=0.2, segment.alpha=0.4) +
+    geom_abline(intercept=0, slope=1, linetype='dashed', col='grey50')
+```
 
 ## Ordered by ratio of Medicaid to Private Insurance admissions
 
@@ -148,8 +160,8 @@ mdc_gplots <- lapply(2:7, function(k, .kmeans=mdc_kmeans, .df=df) {
 
 Implemented k-means clustering for $k=[2,15]$. Visual of clusters for $k=[2,6]$.
 
-```{r plotk2_k6, include=TRUE, fig.height=18, dpi=320}
-grid.arrange(grobs=mdc_gplots, ncol=2)
+```{r plotk2_k6, include=TRUE, fig.height=24, dpi=320}
+grid.arrange(grobs=mdc_gplots, ncol=1)
 ```
 
 ## Determining Optimal Clusters
