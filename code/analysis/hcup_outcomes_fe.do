@@ -53,13 +53,12 @@ else {
 
 * Directories
 global proj_dir "/gpfs/data/desailab/home"
-local scratch_dir "/gpfs/scratch/azc211/ny_mergers"
 
 * Date
 local today: di %tdCCYYNNDD date(c(current_date), "DMY")
 
 * Filepaths
-local log_file "`scratch_dir'/logs/hcup_outcomes_`xvarOpt'`_aweight'_`today'.smcl"
+local log_file "logs/hcup_outcomes_`xvarOpt'`_aweight'_`today'.smcl"
 local log_file_pdf "reports/hcup_outcomes_`xvarOpt'`_aweight'.pdf"
 
 * Labels and misc.
