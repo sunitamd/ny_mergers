@@ -46,20 +46,23 @@ save `sysids', replace
 
 * HCUP NY SID SUPP data
 ********************************************
-use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_supp_collapsed.dta", clear
+use "$proj_dir/ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp.dta", clear
 
 * Standard HHI (share of commercially-insured patients within each zipcode-MDC combination)
 ********************************************
-	* Reduce to unique patients
+		* Keep commerical patients only
 		keep if pay1==3
 
+		* Drop regular newborn to avoid over counting with delivery
+		drop if drg==795
+
 		* Drop Foreign, Homeless, Invalid, Missing zipcodes
-		drop if inlist(zip, "missing", "A", "B", "C", "F", "H", "M")
+		drop if inlist(zip, "", "A", "B", "C", "F", "H", "M")
 		* Drop 3 digit zipcodes
 		drop if strlen(zip)==3
 
 		* Drop if no unique patient ID
-		drop if visitlink==9
+		drop if visitlink==.
 
 		* reduce from discharge record level to patient level
 		keep visitlink zip mdc ahaid year
