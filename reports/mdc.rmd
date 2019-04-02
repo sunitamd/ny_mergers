@@ -1,0 +1,158 @@
+---
+title: MDC Exploration
+output:
+    html_document:
+        toc: true
+        toc_float: true
+        theme: lumen
+        highlight: zenburn
+        df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+knitr::opts_chunk$set(include=FALSE)
+knitr::opts_chunk$set(message=FALSE)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=80), tidy=TRUE)
+knitr::opts_knit$set(root.dir='..')
+```
+
+```{r libraries}
+library(tidyverse)
+library(ggrepel)
+library(factoextra)
+library(gridExtra)
+library(RColorBrewer)
+
+theme_set(theme_bw())
+```
+
+```{r data}
+mdc_labels <- c('Pre-MDC', 'Nervous', 'Eye', 'Ear,Nose,Mouth,Throat', 'Respiratory', 'Circulatory', 'Digestive', 'Hepatobiliary & Pancreas', 'Musculoskeletal', 'Skin', 'Endocrine', 'Kidney/UT', 'Male Reprod.', 'Female Reprod.', 'Pregnancy', 'Newborn', 'Blood/Immunological', 'Myeloproliferative', 'Infections/Parasitic', 'Mental', 'Alcohol/Drug', 'Injuries/Poision', 'Burns', 'Health Status/Services', 'Trauma', 'HIV')
+mdc_names <- c('Pre-MDC', 'Diseases and Disorders of the Nervous System', 'Diseases and Disorders of the Eye', 'Diseases and Disorders of the Ear, Nose, Mouth And Throat', 'Diseases and Disorders of the Respiratory System', 'Diseases and Disorders of the Circulatory System', 'Diseases and Disorders of the Digestive System', 'Diseases and Disorders of the Hepatobiliary System And Pancreas', 'Diseases and Disorders of the Musculoskeletal System And Connective Tissue', 'Diseases and Disorders of the Skin, Subcutaneous Tissue And Breast', 'Diseases and Disorders of the Endocrine, Nutritional And Metabolic System', 'Diseases and Disorders of the Kidney And Urinary Tract', 'Diseases and Disorders of the Male Reproductive System', 'Diseases and Disorders of the Female Reproductive System', 'Pregnancy, Childbirth And Puerperium', 'Newborn And Other Neonates (Perinatal Period)', 'Diseases and Disorders of the Blood and Blood Forming Organs and Immunological Disorders', 'Myeloproliferative DDs (Poorly Differentiated Neoplasms)', 'Infectious and Parasitic DDs (Systemic or unspecified sites)', 'Mental Diseases and Disorders', 'Alcohol/Drug Use or Induced Mental Disorders', 'Injuries, Poison And Toxic Effect of Drugs', 'Burns', 'Factors Influencing Health Status and Other Contacts with Health Services', 'Multiple Significant Trauma', 'Human Immunodeficiency Virus Infection')
+names(mdc_labels) <- 0:25
+
+pay_cols <- brewer.pal(6, 'Paired')
+
+
+mdc <- readRDS('dump/mdc.rds')
+mdc_spread <- spread(mdc, pay1, ds, fill=0) %>%
+    mutate(total=Medicare+Medicaid+Private+SelfPay+NoCharge+Other,medicaid_pr=Medicaid/total, private_pr=Private/total)
+mdc <- left_join(mdc, mdc_spread, by='mdc') %>%
+    mutate(medicaid_pr=Medicaid/ds)
+mdc_kmeans_data <- mdc_spread %>%
+    mutate(Desc=mdc_names) %>%
+    select(mdc, Desc, everything(), -medicaid_pr, -private_pr)
+```
+
+
+# Purpose
+Find MDCs associated with Medicaid and/or Private Insurance payer types.
+
+Analyzing MDC codes from all admissions in HCUP NY SID 2006-2012.
+
+
+# Bar plots {.tabset .tabset-fade}
+
+## Ordered by proportion of Medicaid admissions
+
+```{r bar plot pr, include=TRUE, fig.width=7, fig.height=7}
+ggplot(mdc, aes(reorder(mdc, -medicaid_pr), ds, fill=pay1)) +
+    geom_col() +
+    scale_fill_manual('Payer', values=pay_cols) +
+    labs(x='MDC', y='Discharges', caption='Arranged by descending Medicaid admissions proportion')
+```
+
+## Ordered by counts of Medicaid admission
+
+```{r bar plot counts, include=TRUE, fig.width=7, fig.height=7}
+ggplot(mdc, aes(reorder(mdc, -Medicaid), ds, fill=pay1)) +
+    geom_col() +
+    scale_fill_manual('Payer', values=pay_cols) +
+    labs(x='MDC', y='Discharges', caption='Arranged by descending Medicaid admission counts')
+```
+
+
+# K-means clustering
+
+## Background & Algorithm
+
+K-means clustering classifies MDCs into _k_ groups such that MDCs within the same cluster are as similar as possible, and MDCs from different clusters are as dissimilar as possible.
+For our data, similarity is represented by the number of discharges/admissions from each payer type.
+
+```{r, include=TRUE, cols.print=8, rows.print=5}
+mdc_spread
+```
+
+K-means defines clusters by trying to minimize the total within-cluster variation. The standard algorithm (Hartigan-Wong (1979)) defines the within-cluster variation as the sum of squared Euclidean distances between each MDC and its corresponding cluster centroid:
+
+$$W(C_k) = \sum_{x_i \in C_k} (x_i - \mu_k)^2$$
+
+where:
+
+* $x_i$ is an MDC belonging to cluster $C_k$
+* $\mu_k$ is the mean value of the MDCs assigned to cluster $C_k$. This is a vector of the means of all discharges by payer type for all MDCs in the cluster.
+
+The algorithm tries the minimize the total within-cluster varition:
+
+$$Total.Within.SS = \sum_{k=1}^{k} W(C_k) = \sum_{k=1}^{k} \sum_{x_i \in C_k} (x_i - \mu_k)^2$$
+
+K-means algorithm can be summarized as:
+
+1. Specify the number of clusters (*k*).
+2. Select randomly *k* MDCs from the data as the initial cluster centroid/means.
+3. Assigns each MDC to their closest centroid, based on Euclidean distance.
+4. For each of the *k* clusters update the cluster centroid by recalculating mean values of all MDCs in the cluster.
+5. Iteratively minimize the total within sum of squares. I.e. repeat steps 3 and 4 until cluster assignments stop changing or a user-specified maximum number of iterations is reached.
+
+## Cluster Results
+
+```{r kmeans}
+df <- select(mdc_kmeans_data, -mdc, -Desc) %>% as.data.frame()
+rownames(df) <- mdc_labels
+
+# k-means
+set.seed(8)
+mdc_kmeans <- lapply(2:15, function(k, .df=df) {
+    kmeans(.df, k, iter.max=100, nstart=25)
+})
+
+# custom cluster plot
+mdc_gplots <- lapply(2:7, function(k, .kmeans=mdc_kmeans, .df=df) {
+    temp <- .df
+    temp$cluster <- factor(.kmeans[[k-1]]$cluster)
+    temp$mdc <- rownames(temp)
+    temp <- arrange(temp, Medicaid, Private)
+    temp_chull <- temp %>%
+        group_by(cluster) %>%
+            slice(chull(Medicaid, Private))
+
+    ggplot(temp, aes(Medicaid, Private, color=cluster)) +
+        geom_point(pch=8) +
+        geom_text_repel(aes(label=mdc), size=3, segment.size=0.2, segment.alpha=0.4) +
+        geom_polygon(data=temp_chull, aes(color=cluster, group=cluster, fill=cluster), alpha=0.3) +
+        guides(color=FALSE, fill=FALSE) +
+        labs(title=paste0('k=',k))
+})
+```
+
+Implemented k-means clustering for $k=[2,15]$. Visual of clusters for $k=[2,6]$.
+
+```{r plotk2_k6, include=TRUE, fig.height=18, dpi=320}
+grid.arrange(grobs=mdc_gplots, ncol=2)
+```
+
+## Determining Optimal Clusters
+
+Recall k-means defines clusters by minimizing the the total within-cluster variation (*Total.Within.SS*). We can plot the *Total.Within.SS* against the number of clusters *k* to decide the optimal number of clusters.
+
+As *k* increases, the *Total.Within.SS* approaches 0. Generally, researchers use the "elbow method" of finding the value of *k* where the line bends as the point where there are diminishing returns in reducing the *Total.Within.SS*.
+
+```{r scree plot, include=TRUE}
+mdc_wss <- lapply(mdc_kmeans, function(kmean) kmean$tot.withinss)
+plot(2:15, mdc_wss,
+       type="b", pch = 19, frame = FALSE, 
+       xlab="Number of clusters K",
+       ylab="Total within-clusters sum of squares")
+```
