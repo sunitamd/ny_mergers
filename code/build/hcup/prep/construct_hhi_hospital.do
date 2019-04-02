@@ -9,7 +9,7 @@ set more off
 
 * Check for ftools package
 cap which ftools
-_rc==111 ssc install ftools
+if _rc==111 ssc install ftools
 
 ********************************************
 * MACROS

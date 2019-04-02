@@ -104,19 +104,31 @@ df <- scale(mdc_spread)
 set.seed(8)
 
 mdc_ks <- lapply(2:15, function(k, .df=df) {
-    kmeans(.df[,-1], k, nstart=25)
+    kmeans(.df[,-1], k, iter.max=100, nstart=25)
 })
-mdc_wss <- lapply(mdc_ks, function(kmean) kmean$tot.withinss)
 
+# plot kmeans clusters
 mdc_plots <- lapply(1:5, function(i, .kmeans=mdc_ks, .df=df) {
     fviz_cluster(.kmeans[[i]], geom='point', data=.df) + ggtitle(paste0('k=',i+1))
 })
 grid.arrange(mdc_plots[[1]], mdc_plots[[2]], mdc_plots[[3]], mdc_plots[[4]], mdc_plots[[5]], nrow=3)
 
+# elbow plot
+mdc_wss <- lapply(mdc_ks, function(kmean) kmean$tot.withinss)
 plot(2:15, mdc_wss,
        type="b", pch = 19, frame = FALSE, 
        xlab="Number of clusters K",
        ylab="Total within-clusters sum of squares")
+
+# silhouelette plot
+mdc_sils <- lapply(mdc_ks, function(kmean, .df=df) {
+    ss <- silhouette(kmean$cluster, dist(.df))
+    mean(ss[,3])
+})
+plot(2:15, mdc_sils,
+       type = "b", pch = 19, frame = FALSE, 
+       xlab = "Number of clusters K",
+       ylab = "Average Silhouettes")
 
 
 # DRG Codes
