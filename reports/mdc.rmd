@@ -3,9 +3,9 @@ title: MDC Exploration
 output:
     html_document:
         toc: true
-        toc_float: true
-        theme: lumen
-        highlight: zenburn
+        toc_float:
+            collapsed: false
+        theme: cosmo
         df_print: paged
 ---
 
@@ -42,8 +42,8 @@ mdc_spread <- spread(mdc, pay1, ds, fill=0) %>%
 mdc <- left_join(mdc, mdc_spread, by='mdc') %>%
     mutate(medicaid_pr=Medicaid/ds)
 mdc_kmeans_data <- mdc_spread %>%
-    mutate(Desc=mdc_names) %>%
-    select(mdc, Desc, everything(), -medicaid_pr, -private_pr)
+    mutate(Desc=paste0(mdc, ' - ', mdc_names)) %>%
+    select(mdc, Desc, everything(), -medicaid_pr, -private_pr, -mdcd_pri)
 ```
 
 
@@ -53,7 +53,9 @@ Find MDCs associated with Medicaid and/or Private Insurance payer types.
 Analyzing MDC codes from all admissions in HCUP NY SID 2006-2012.
 
 
-# Plots {.tabset .tabset-fade}
+# MDC Plots {.tabset .tabset-fade}
+
+All plots show number of admissions by Major Diagnostic Criteria
 
 ## Scatterplot
 
@@ -62,36 +64,47 @@ temp <- mdc_spread %>%
     mutate(desc=mdc_labels)
 
 ggplot(temp, aes(Medicaid, Private)) +
-    geom_text_repel(aes(label=desc), size=3, segment.size=0.2, segment.alpha=0.4) +
+    geom_text_repel(aes(label=desc), size=3, segment.size=0.2, segment.alpha=0.4, force=3) +
     geom_point(pch=1, alpha=0.8, col='dodgerblue4') +
     geom_abline(intercept=0, slope=1, linetype='dashed', col='grey50') +
-    coord_cartesian(xlim=c(-8e4,12e4), ylim=c(-1e4,10e4))
+    coord_cartesian(xlim=c(-5e4,12e4), ylim=c(-1e4,10e4))
 ```
 
-## Ordered by ratio of Medicaid to Private Insurance admissions
+## By Counts of Medicaid Admission
 
-```{r bar plot ratio, include=TRUE}
-ggplot(mdc, aes(reorder(mdc, -mdcd_pri), ds, fill=pay1)) +
-    geom_col() +
-    scale_fill_manual('Payer', values=pay_cols) +
-    labs(x='MDC', y='Discharges')
-```
-
-## Ordered by proportion of Medicaid admissions
-
-```{r bar plot pr, include=TRUE, fig.width=7, fig.height=7}
-ggplot(mdc, aes(reorder(mdc, -medicaid_pr), ds, fill=pay1)) +
-    geom_col() +
-    scale_fill_manual('Payer', values=pay_cols) +
-    labs(x='MDC', y='Discharges')
-```
-
-## Ordered by counts of Medicaid admission
+*MDCs ordered in descending order of Medicaid admission counts*
 
 ```{r bar plot counts, include=TRUE, fig.width=7, fig.height=7}
-ggplot(mdc, aes(reorder(mdc, -Medicaid), ds, fill=pay1)) +
+temp <- mdc %>%
+    mutate(mdc=factor(mdc, levels=0:25, labels=mdc_labels))
+ggplot(temp, aes(reorder(mdc, -Medicaid), ds, fill=pay1)) +
     geom_col() +
     scale_fill_manual('Payer', values=pay_cols) +
+    theme(axis.text.x=element_text(angle=60, hjust=1)) +
+    labs(x='MDC', y='Discharges')
+```
+
+## By Prop. of Medicaid Admissions
+
+*MDCs ordered in descending order of Medicaid admission proportion (of all admissions)*
+
+```{r bar plot pr, include=TRUE, fig.width=7, fig.height=7}
+ggplot(temp, aes(reorder(mdc, -medicaid_pr), ds, fill=pay1)) +
+    geom_col() +
+    scale_fill_manual('Payer', values=pay_cols) +
+    theme(axis.text.x=element_text(angle=60, hjust=1)) +
+    labs(x='MDC', y='Discharges')
+```
+
+## By Ratio of Medicaid to Private Insurance Admissions
+
+*MDCs ordered in descending order of ratio of Medicaid:Private Insurance admissions*
+
+```{r bar plot ratio, include=TRUE}
+ggplot(temp, aes(reorder(mdc, -mdcd_pri), ds, fill=pay1)) +
+    geom_col() +
+    scale_fill_manual('Payer', values=pay_cols) +
+    theme(axis.text.x=element_text(angle=60, hjust=1)) +
     labs(x='MDC', y='Discharges')
 ```
 
@@ -103,8 +116,8 @@ ggplot(mdc, aes(reorder(mdc, -Medicaid), ds, fill=pay1)) +
 K-means clustering classifies MDCs into _k_ groups such that MDCs within the same cluster are as similar as possible, and MDCs from different clusters are as dissimilar as possible.
 For our data, similarity is represented by the number of discharges/admissions from each payer type.
 
-```{r, include=TRUE, cols.print=8, rows.print=26}
-mdc_kmeans_data
+```{r print data, include=TRUE, cols.print=8, rows.print=15}
+select(mdc_kmeans_data, -mdc)
 ```
 
 K-means defines clusters by trying to minimize the total within-cluster variation. The standard algorithm (Hartigan-Wong (1979)) defines the within-cluster variation as the sum of squared Euclidean distances between each MDC and its corresponding cluster centroid:
@@ -152,15 +165,15 @@ mdc_gplots <- lapply(2:6, function(k, .kmeans=mdc_kmeans, .df=df) {
 
     ggplot(temp, aes(Medicaid, Private, color=cluster)) +
         geom_point(pch=1, alpha=0.8) +
-        geom_text_repel(aes(label=mdc), size=3, segment.size=0.2, segment.alpha=0.4) +
+        geom_text_repel(aes(label=mdc), size=3, segment.size=0.2, segment.alpha=0.4, force=2) +
         geom_polygon(data=temp_chull, aes(color=cluster, group=cluster, fill=cluster), alpha=0.3) +
-        coord_cartesian(xlim=c(-6e4,12e4), ylim=c(-1e4,10e4)) +
+        coord_cartesian(xlim=c(-5e4,10e4), ylim=c(-1e4,10e4)) +
         guides(color=FALSE, fill=FALSE) +
         labs(title=paste0('k=',k))
 })
 ```
 
-Implemented k-means clustering for $k=[2,15]$. Visual of clusters for $k=[2,6]$.
+Implemented k-means clustering for $k=[2,15]$. Below are plots of clusters for $k=[2,6]$. Usually these plots are projected on the first two primary components, but we are specifically interested in two specific dimensions (Medicaid & Private Insurance admissions).
 
 ```{r plotk2_k6, include=TRUE, fig.height=24, dpi=320}
 grid.arrange(grobs=mdc_gplots, ncol=1)
@@ -170,7 +183,7 @@ grid.arrange(grobs=mdc_gplots, ncol=1)
 
 Recall k-means defines clusters by minimizing the the total within-cluster variation (*Total.Within.SS*). We can plot the *Total.Within.SS* against the number of clusters *k* to decide the optimal number of clusters.
 
-As *k* increases, the *Total.Within.SS* approaches 0. Generally, researchers use the "elbow method" of finding the value of *k* where the line bends as the point where there are diminishing returns in reducing the *Total.Within.SS*.
+As *k* increases, the *Total.Within.SS* approaches 0. Generally, researchers use the "elbow method" for finding the value of *k* where the line bends as the point where there are diminishing returns in reducing the *Total.Within.SS*.
 
 ```{r scree plot, include=TRUE}
 mdc_wss <- lapply(mdc_kmeans, function(kmean) kmean$tot.withinss)
@@ -179,3 +192,5 @@ plot(2:15, mdc_wss,
        xlab="Number of clusters K",
        ylab="Total within-clusters sum of squares")
 ```
+
+The above scree plot implies that *k=5* is the optimal number of clusters. However, recall that we are clustering MDCs based on number of discharges per payer type, but we are only interested in trying to find subsets of MDCs that are more associated to either Medicaid or Private Insurance.
