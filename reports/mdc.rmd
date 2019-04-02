@@ -62,9 +62,10 @@ temp <- mdc_spread %>%
     mutate(desc=mdc_labels)
 
 ggplot(temp, aes(Medicare, Private)) +
-    geom_point(pch=8, alpha=0.8, col='dodgerblue4') +
     geom_text_repel(aes(label=desc), size=3, segment.size=0.2, segment.alpha=0.4) +
-    geom_abline(intercept=0, slope=1, linetype='dashed', col='grey50')
+    geom_point(pch=1, alpha=0.8, col='dodgerblue4') +
+    geom_abline(intercept=0, slope=1, linetype='dashed', col='grey50') +
+    coord_cartesian(xlim=c(-5e4,20e4), ylim=c(-1e4,9e4))
 ```
 
 ## Ordered by ratio of Medicaid to Private Insurance admissions
@@ -150,9 +151,10 @@ mdc_gplots <- lapply(2:7, function(k, .kmeans=mdc_kmeans, .df=df) {
             slice(chull(Medicaid, Private))
 
     ggplot(temp, aes(Medicaid, Private, color=cluster)) +
-        geom_point(pch=8) +
+        geom_point(pch=1, alpha=0.8) +
         geom_text_repel(aes(label=mdc), size=3, segment.size=0.2, segment.alpha=0.4) +
         geom_polygon(data=temp_chull, aes(color=cluster, group=cluster, fill=cluster), alpha=0.3) +
+        coord_cartesian(xlim=c(-5e4,20e4), ylim=c(-1e4,9e4)) +
         guides(color=FALSE, fill=FALSE) +
         labs(title=paste0('k=',k))
 })
