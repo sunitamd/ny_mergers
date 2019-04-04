@@ -89,7 +89,7 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_supp_collapsed.dta", clear
 
             egen `var' = total(`var'1-`var'6)
 
-            fovalues i=1/5 {
+            forvalues i=1/5 {
                 * Counts
                 local y_mdc_cnts `y_mdc_cnts' `var'`i'
 
