@@ -30,14 +30,16 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_supp_collapsed.dta", clear
     * Gen discharges for each MDC
     levelsof mdc, local(mdcs) clean
     foreach mdc of local mdcs {
-        gen mdc_`mdc' = 1 if mdc==`mdc'
+        gen mdc_`mdc'_ = 1 if mdc==`mdc'
     }
     qui lookfor mdc_
     local mdcs `r(varlist)'
 
     * Collapse to hospital-level
     encode ahaid, gen(ahaid_cd)
-    fcollapse (sum) discharges `mdcs' , by(year pay1 ahaid_cd) fast
+
+    fcollapse (sum) discharges `mdcs', by(year pay1 ahaid_cd) fast
+    
     decode ahaid_cd, gen(ahaid)
     drop ahaid_cd
 

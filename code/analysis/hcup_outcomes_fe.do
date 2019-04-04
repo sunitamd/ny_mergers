@@ -64,11 +64,8 @@ local log_file_pdf "reports/hcup_outcomes_`xvarOpt'`_aweight'.pdf"
 * Labels and misc.
 local pay_labels `""Medicare" "Medicaid" "PrivIns" "SelfPay" "NoCharge" "Other" "Missing""'
 
-local util_medicaid "u_ed u_mhsa u_newbn"
-local util_medicaid_labels `""Emergency Department" "Mental Health/Substance Abuse" "Newborn""'
-
-local util_privins "u_cath u_nucmed u_observation u_organacq u_othimplants u_radtherapy"
-local util_privins_labels `""Cardiac Cath. Lab" "Nuclear Medicine" "Observation" "Organ Acquisition" "Other implants" "Radiology/Chemotherapy""'
+local mdcs 1 4 5 6 8 15 19 20 25
+local mdc_labels `""Nervous System" "Respiratory System" "Ciculatory System" "Digestive System" "Newborn" "Mental Health" "Alcohol/Drug Abuse" "HIV""'
 
 * Model settings
 if "`xvarOpt'" == "post_anytarget" {
@@ -245,9 +242,9 @@ n di "* * *"
 
 
 	********************************************
-	* Service utilization models
+	* MDC models
 	********************************************
-	noisily di in red "* * * SERVICE UTILIZATIONS * * *"
+	noisily di in red "* * * DISCHARGES BY MAJOR DIAGNOSTIC CATEGORY * * *"
 		********************************************
 		* Utilization log counts
 		local i 1
