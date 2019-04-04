@@ -27,9 +27,17 @@ local outcome_vars
 use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_supp_collapsed.dta", clear
 
     ********************************************
+    * Gen discharges for each MDC
+    levelsof mdc, local(mdcs) clean
+    foreach mdc of local mdcs {
+        gen mdc_`mdc' = 1 if mdc==`mdc'
+    }
+    qui lookfor mdc_
+    local mdcs `r(varlist)'
+
     * Collapse to hospital-level
     encode ahaid, gen(ahaid_cd)
-    fcollapse (sum) discharges, by(year pay1 ahaid_cd) fast
+    fcollapse (sum) discharges `mdcs' , by(year pay1 ahaid_cd) fast
     decode ahaid_cd, gen(ahaid)
     drop ahaid_cd
 
@@ -43,9 +51,9 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_supp_collapsed.dta", clear
     qui lookfor u_
     local util_vars `r(varlist)'
 
-    reshape wide discharges `util_vars', i(ahaid year) j(pay1)
+    reshape wide discharges `mdcs' `util_vars', i(ahaid year) j(pay1)
 
-    order discharges* u_*, alpha last
+    order discharges* mdc_* u_*, alpha last
 
     ********************************************
     * Prep outcome variables
@@ -66,6 +74,31 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_supp_collapsed.dta", clear
             gen `var'_lg = log(`var' + 1)
 
             local outcome_vars `outcome_vars' `var'_pr `var'_lg
+        }
+
+
+    * Major Diagnostic Category (MDC)
+    ********************************************
+        * Totals
+        local y_mdc_totals `mdcs'
+
+        local y_mdc_cnts
+        foreach var of local y_mdc_totals {
+
+            egen `var' = total(`var'1-`var'6)
+
+            fovalues i=1/5 {
+                * Counts
+                local y_mdc_cnts `y_mdc_cnts' `var'`i'
+
+                * Proportions
+                gen `var'`i'_pr = `var'`i' / `var'
+
+                * Generate log outcomes for counts
+                gen `var'`i'_lg = log(`var'`i' + 1)
+
+                local outcome_vars `outcome_vars' `var'`i'_pr `var'`i'_lg
+            }
         }
 
 
@@ -93,11 +126,12 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_supp_collapsed.dta", clear
             }
         }
 
+
 ********************************************
 * SAVE
 ********************************************
     
-keep ahaid cnty year discharges `y_ds_cnts' `y_util_totals' `outcome_vars'
+keep ahaid cnty year discharges `y_ds_cnts' `y_mdc_totals' `y_util_totals' `outcome_vars'
 
 save "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", replace
 !chmod g+rw "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta"
