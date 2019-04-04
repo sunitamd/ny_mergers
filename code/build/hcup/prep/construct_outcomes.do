@@ -133,7 +133,7 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_supp_collapsed.dta", clear
 * SAVE
 ********************************************
     
-keep ahaid cnty year discharges `y_ds_cnts' `y_mdc_totals' `y_util_totals' `outcome_vars'
+keep ahaid year discharges `y_ds_cnts' `y_mdc_totals' `y_util_totals' `outcome_vars'
 
 save "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", replace
 !chmod g+rw "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta"
