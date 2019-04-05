@@ -35,10 +35,9 @@ pay_cols <- brewer.pal(6, 'Paired')
 
 if (Sys.info()['sysname'] == 'unix') {
     if (sample) {
-        library(haven)
-        hcup <- read_dta(paste0(proj_dir, 'ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp_sample.dta'))
+        hcup <- haven::read_dta(paste0(proj_dir, 'ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp_sample.dta'))
     } else {
-        hcup <- readRDS(paste0(proj_dir, 'ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp_sample.rds'))
+        hcup <- readRDS(paste0(proj_dir, 'ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp.rds'))
     }
 } else {
     hcup <- readRDS('dump/ny_sid_0612_supp.rds')
@@ -156,19 +155,114 @@ plot(2:15, mdc_sils,
 df <- scale(drg_spread[,-1])
 rownames(df) <- drg_spread[,1][[1]]
 
+# k-means clustering
 set.seed(8)
 
 drg_ks <- lapply(2:15, function(k, .df=df) {
-    kmeans(.df, k, nstart=25)
+    kmeans(.df, k, iter.max=100, nstart=25)
 })
+
+# cluster visualization
+drg_gplots <- lapply(2:9, function(k, .kmeans=drg_ks, .df=df) {
+    temp <- as.data.frame(.df)
+    temp$cluster <- factor(.kmeans[[k-1]]$cluster)
+    temp$drg <- rownames(temp)
+    temp <- arrange(temp, Medicaid, Private)
+    temp_chull <- temp %>%
+        group_by(cluster) %>%
+            slice(chull(Medicaid, Private))
+
+    ggplot(temp, aes(Medicaid, Private, color=cluster)) +
+        geom_point(pch=6, size=0.6, alpha=0.6) +
+        # geom_text_repel(aes(label=drg), size=3, segment.size=0.2, segment.alpha=0.4) +
+        geom_polygon(data=temp_chull, aes(color=cluster, group=cluster, fill=cluster), alpha=0.3) +
+        guides(color=FALSE, fill=FALSE) +
+        labs(title=paste0('k=',k))
+})
+grid.arrange(grobs=drg_gplots, nrow=2)
+
+# Scree plot
 drg_wss <- lapply(drg_ks, function(kmean) kmean$tot.withinss)
-
-drg_plots <- lapply(1:5, function(i, .kmeans=drg_ks, .df=df) {
-    fviz_cluster(.kmeans[[i]], geom='point', data=.df) + ggtitle(paste0('k=',i+1))
-})
-grid.arrange(drg_plots[[1]], drg_plots[[2]], drg_plots[[3]], drg_plots[[4]], drg_plots[[5]], nrow=3)
-
 plot(2:15, drg_wss,
        type="b", pch = 19, frame = FALSE, 
        xlab="Number of clusters K",
        ylab="Total within-clusters sum of squares")
+
+############################################
+# Cluster DRGs by specific MDC
+mdc_drg <- hcup %>%
+    group_by(mdc) %>%
+        distinct(drg) %>%
+        ungroup()
+
+kmean_drg <- function(mdc, .mdc_drg=mdc_drg, .drg_spread=drg_spread) {
+    # kmeans for DRGs of specific MDC
+
+    # Pull DRGs
+    drgs <- .mdc_drg %>%
+        filter(mdc==!!mdc) %>%
+        pull(drg)
+
+    .df <- filter(drg_spread, drg %in% !!drgs)
+    rownames(.df) <- .df[,1][[1]]
+    .df[,1] <- NULL
+
+    # k-means clustering
+    set.seed(8)
+
+    kmeans <- lapply(2:15, function(k, data=.df) {
+        kmeans(data, k, iter.max=100, nstart=25)
+    })
+
+    # cluster plots
+    plots <- lapply(2:9, function(k, .kmeans=kmeans, data=.df) {
+        temp <- as.data.frame(data)
+        temp$cluster <- factor(.kmeans[[k-1]]$cluster)
+        temp$drg <- rownames(temp)
+        temp <- arrange(temp, Medicaid, Private)
+        temp_chull <- temp %>%
+            group_by(cluster) %>%
+                slice(chull(Medicaid, Private)) %>%
+                ungroup()
+
+        ggplot(temp, aes(Medicaid, Private), color=cluster) +
+            geom_text_repel(aes(label=drg), size=2, segment.size=0.2) +
+            geom_point(pch=4, size=0.8, alpha=0.8) +
+            geom_polygon(data=temp_chull, aes(color=cluster, group=cluster, fill=cluster), alpha=0.2) +
+            guides(color=FALSE, fill=FALSE) +
+            labs(title=paste0('k = ', k))
+    })
+    
+    plot.grid <- grid.arrange(grobs=plots, nrow=2)
+
+    # Scree plot
+    wss <- lapply(kmeans, function(kmean) kmean$tot.withinss)
+    scree <- plot(2:15, wss,
+        type='b', pch=19, frame=FALSE,
+        xlab='Number of clusters k', ylab='Total within-cluster sum of squares')
+
+    return(list(kmeans=kmeans, plots=plots, plot.grid=plot.grid, scree=scree))
+
+}
+
+# scatter DRGs by specific MDCs
+scatter_drg <- function(mdc, .mdc_drg=mdc_drg, .drg_spread=drg_spread, mdcs=mdc_labels) {
+    # kmeans for DRGs of specific MDC
+
+    # Pull DRGs
+    drgs <- .mdc_drg %>%
+        filter(mdc==!!mdc) %>%
+        pull(drg)
+
+    df <- filter(drg_spread, drg %in% !!drgs) %>%
+        rowwise() %>%
+        mutate(tot=sum(Medicare, Medicaid, Private, NoCharge, Other))
+
+    ggplot(df, aes(Medicaid, Private, alpha=tot)) +
+        geom_text_repel(aes(label=drg), size=2, segment.size=0.2) +
+        geom_point(pch=20) +
+        geom_abline(intercept=0, slope=1, color='tomato4', linetype='dashed', alpha=0.4) +
+        scale_alpha_continuous(name='Total discharges') +
+        labs(title=paste0('MDC: (', mdc, ') ', mdc_labels[mdc]))
+
+    }
