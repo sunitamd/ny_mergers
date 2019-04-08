@@ -3,11 +3,18 @@
 ############################################
 
 library(tidyverse)
+library(ggrepel)
+library(gridExtra)
 
 
 ############################################
 
 mdc_drg <- readRDS('dump/mdc_drg.rds')
+
+mdc_names <- c('Pre-MDC', 'Diseases and Disorders of the Nervous System', 'Diseases and Disorders of the Eye', 'Diseases and Disorders of the Ear, Nose, Mouth And Throat', 'Diseases and Disorders of the Respiratory System', 'Diseases and Disorders of the Circulatory System', 'Diseases and Disorders of the Digestive System', 'Diseases and Disorders of the Hepatobiliary System And Pancreas', 'Diseases and Disorders of the Musculoskeletal System And Connective Tissue', 'Diseases and Disorders of the Skin, Subcutaneous Tissue And Breast', 'Diseases and Disorders of the Endocrine, Nutritional And Metabolic System', 'Diseases and Disorders of the Kidney And Urinary Tract', 'Diseases and Disorders of the Male Reproductive System', 'Diseases and Disorders of the Female Reproductive System', 'Pregnancy, Childbirth And Puerperium', 'Newborn And Other Neonates (Perinatal Period)', 'Diseases and Disorders of the Blood and Blood Forming Organs and Immunological Disorders', 'Myeloproliferative DDs (Poorly Differentiated Neoplasms)', 'Infectious and Parasitic DDs (Systemic or unspecified sites)', 'Mental Diseases and Disorders', 'Alcohol/Drug Use or Induced Mental Disorders', 'Injuries, Poison And Toxic Effect of Drugs', 'Burns', 'Factors Influencing Health Status and Other Contacts with Health Services', 'Multiple Significant Trauma', 'Human Immunodeficiency Virus Infection')
+mdc_names <- paste0(0:25, ': ', mdc_names)
+mdc_choices <-  0:25
+names(mdc_choices) <- mdc_names
 
 ############################################
 
@@ -64,7 +71,7 @@ kmean_drg <- function(mdc, .mdc_drg=mdc_drg, .drg_spread=drg_spread) {
 
 
 # scatter DRGs by specific MDCs
-scatter_drg <- function(mdc, .mdc_drg=mdc_drg, .drg_spread=drg_spread, mdcs=mdc_labels) {
+scatter_drg <- function(mdc, .mdc_drg=mdc_drg, .drg_spread=drg_spread, .mdc_names=mdc_names) {
     # kmeans for DRGs of specific MDC
 
     # Pull DRGs
@@ -81,6 +88,6 @@ scatter_drg <- function(mdc, .mdc_drg=mdc_drg, .drg_spread=drg_spread, mdcs=mdc_
         geom_point(pch=20) +
         geom_abline(intercept=0, slope=1, color='tomato4', linetype='dashed', alpha=0.4) +
         scale_alpha_continuous(name='Total discharges') +
-        labs(title=paste0('MDC: (', mdc, ') ', mdc_labels[mdc]))
+        labs(title=paste0('MDC: (', mdc, ') ', .mdc_names[mdc]))
 
     }
