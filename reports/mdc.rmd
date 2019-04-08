@@ -21,7 +21,6 @@ knitr::opts_knit$set(root.dir='..')
 ```{r libraries}
 library(tidyverse)
 library(ggrepel)
-library(factoextra)
 library(gridExtra)
 library(RColorBrewer)
 
