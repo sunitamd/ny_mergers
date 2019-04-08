@@ -3,8 +3,9 @@ log using log_us_descr, replace
 quietly
 /*working directory*/
 cd "/gpfs/data/desailab/home/ny_mergers/data_hospclean"
-/*data set*/
-use "/gpfs/data/desailab/home/ny_mergers/data_hospclean/hospmerger_fin0210.dta", clear
+/*create a loop to automatically analyze US and NY hospital level data*/
+foreach x in "hospmerger_ny_fin0210.dta" "hospmerger_fin0210.dta" {
+use `x', clear
 /*variable for hospitals never merged*/
 bysort id: egen non_m= min(post_target == 0 & post_acquirer==0)
 /*create variable for any target hospital that has mergered, regarless of pre-post status*/
@@ -35,8 +36,39 @@ label values merger_status merg_status_lbl
 
 /*variable for proportion of medicaid patients that are from total admission*/
 gen prop_medicaid= mcddc2/admtot2
-/*table with different variables of interest for merger and ownership status; second table is freq of merger status by ownership in type of location (rural/metro)*/
-noisily table own_status, contents(mean admtot2 mean mcddc2 mean prop_medicaid mean teaching2 ) by(merger_status)
-noisily table own_status cbsatype, by(merger_status)
-/* tables for each merger status, with summary stats for descriptive variables*/
-by merger_status, sort : summarize admtot2 mcddc2 prop_medicaid teaching2 own_np2 own_fp2 own_gov2
+
+/* mean, sd and number of descriptive variables per merger status*/
+bysort merger_status: egen madm=mean(admtot2)
+bysort merger_status: egen sadm=sd(admtot2)
+bysort merger_status: egen mmedcount=mean(mcddc2)
+bysort merger_status: egen smedcount=sd(mcddc2)
+bysort merger_status: egen mprop=mean(prop_medicaid)
+bysort merger_status: egen sprop=sd(prop_medicaid)
+bysort merger_status: egen mteach=mean(teaching2)
+bysort merger_status: egen steach=sd(teaching2)
+bysort merger_status: egen mnonpr=mean(own_np2)
+bysort merger_status: egen mfropr=mean(own_fp2)
+bysort merger_status: egen mgov=mean(own_gov2)
+bysort merger_status: egen ngov=total(own_gov2)
+bysort merger_status: egen nnonpr=total(own_np2)
+bysort merger_status: egen nfropr=total(own_fp2)
+
+/*variable labels*/
+label variable madm "Admission (mean)"
+label variable sadm "Admission (sd)"
+label variable mmedcount "Medicare Admissions (mean)"
+label variable smedcount "Medicare Admissions (sd)"
+label variable mprop "Medicare Admissions Proportion (mean)"
+label variable sprop "Medicare Admissions Proportion (sd)"
+label variable mteach "Teaching (mean)"
+label variable steach "Teaching (sd)"
+label variable mnonpr "Proportion Non-Profit"
+label variable mfropr "Proportion For-Profit"
+label variable mgov "Proportion Government"
+label variable ngov "N Government"
+label variable nnonpr "N Non-Profit"
+label variable nfropr "N For-Profit"
+
+/*table of descriptive stats for each merger status*/
+tabstat madm sadm mmedcount smedcount mprop sprop mteach steach nnonpr nfropr ngov mnonpr mfropr mgov, by(merger_status)
+}
