@@ -64,7 +64,7 @@ local log_file_pdf "reports/hcup_outcomes_`xvarOpt'`_aweight'.pdf"
 * Labels and misc.
 local pay_labels `""Medicare" "Medicaid" "PrivIns" "SelfPay" "NoCharge" "Other" "Missing""'
 
-local mdcs 1 4 5 6 8 15 19 20 25
+local mdcs_cds 1 4 5 6 8 15 19 20 25
 local mdc_labels `""Nervous System" "Respiratory System" "Ciculatory System" "Digestive System" "Newborn" "Mental Health" "Alcohol/Drug Abuse" "HIV""'
 
 * Model settings
@@ -149,14 +149,25 @@ save `cov', replace
 use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", clear
 
 	* Lookfor yvars
-	qui ds discharges*_lg
-    local y_ds_logs `r(varlist)'
-    qui ds discharges*_pr
-    local y_ds_props `r(varlist)'
-	qui ds u_*_lg
-	local y_util_logs `r(varlist)'
-	qui ds u_*_pr
-	local y_util_props `r(varlist)'
+	* Discharges
+		ds discharges*_lg
+    	local y_ds_logs `r(varlist)'
+    	ds discharges*_pr
+    	local y_ds_props `r(varlist)'
+    * MDCs
+    	local y_mdc_logs
+    	local y_mdc_props
+    	forveach cd of local mdc_cds {
+    		ds mdc_`cd'_*_lg
+    		local y_mdc_logs `y_mdc_logs' `r(varlist)'
+    		ds mdc_`cd'_*_pr
+    		local y_mdc_props `y_mdc_props' `r(varlist)'
+    	}
+    * Utilization flags
+		ds u_*_lg
+		local y_util_logs `r(varlist)'
+		ds u_*_pr
+		local y_util_props `r(varlist)'
 
 	* Labels for model output
 	label var year
@@ -245,6 +256,30 @@ n di "* * *"
 	* MDC models
 	********************************************
 	noisily di in red "* * * DISCHARGES BY MAJOR DIAGNOSTIC CATEGORY * * *"
+		********************************************
+		* MDC log counts
+		local i 1
+		local mdc_n : local word count `mdc_labels'
+		foreach yvar of local y_mdc_logs {
+			local model "`m_`yvar'"
+			local title: word `i' of `mdc_labels'
+			if `i'==`mdc_n' {
+				local i 1
+			}
+			else {
+				local ++i
+			}
+
+			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
+			estimates store `model', title(`title')
+		}
+		* Output model estimates
+		
+
+
+	********************************************
+	* Utilization flag models
+	********************************************
 		********************************************
 		* Utilization log counts
 		local i 1
