@@ -28,9 +28,9 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_supp_collapsed.dta", clear
 
     ********************************************
     * Gen discharges for each MDC
-    levelsof mdc, local(mdcs) clean
-    foreach mdc of local mdcs {
-        gen mdc_`mdc'_ = 1 if mdc==`mdc'
+    levelsof mdc, local(mdc_cds) clean
+    foreach mdc_cd of local mdc_cds {
+        gen mdc_`mdc_cd'_ = 1 if mdc==`mdc_cd'
     }
     qui lookfor mdc_
     local mdcs `r(varlist)'
@@ -91,7 +91,7 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_supp_collapsed.dta", clear
 
             forvalues i=1/5 {
                 * Counts
-                local y_mdc_cnts `y_mdc_cnts' `var'`i'
+                local y_mdc_cnts  `y_mdc_cnts' `var'`i'
 
                 * Proportions
                 gen `var'`i'_pr = `var'`i' / `var'
