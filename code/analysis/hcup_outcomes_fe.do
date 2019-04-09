@@ -297,7 +297,7 @@ n di "* * *"
 		* MDC proportions
 		local i 1
 		foreach yvar of local y_mdc_props {
-			local model "`m_`yvar'"
+			local model "m_`yvar'"
 			local payer: word `i' of `pay_labels'
 			if `i'==5 local i 1
 			else local ++i
