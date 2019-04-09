@@ -209,8 +209,9 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", clear
 	if `aweight' == 1 {
 		bysort ahaid: egen discharges_year = mean(discharges)
 			label var discharges_year "Avg. discharges per year"
+		gen discharges_year_log = log(discharges_year)
 
-		local aweight_opt [aweight=discharges_year]
+		local aweight_opt [aweight=discharges_year_log]
 	}
 	else local aweight_opt ""
 
@@ -218,15 +219,13 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", clear
 ********************************************
 * RUN MODELS
 ********************************************
-n di "* * *"
-n di "* * * Model specifications * * *"
+n di "* * *" _n "* * * Model specifications * * *"
 n di "xtset `panelvar' year"
-if "`aweight'" == "" n di "xtreg outcome `xvars', fe vce(cluster `cluster_var')"
-else n di "xtreg outcome `xvars' [aweight=discharges_year], fe vce(cluster `cluster_var')"
+n di "xtreg outcome `xvars' `aweight_opt', fe vce(cluster `cluster_var')"
 n di "* * *"
 
-	encode `panelvar', gen(`panelvar_id')
-	xtset `panelvar_id' year, yearly
+encode `panelvar', gen(`panelvar_id')
+xtset `panelvar_id' year, yearly
 
 	********************************************
 	* Discharge models
@@ -316,7 +315,7 @@ n di "* * *"
 			local title: word `i' of `mdc_labels'
 			local ++i
 
-			noisily estout `models', title(MDC: `title' (proportions)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
+			noisily estout `models', title(MDC: `title' (proportions)) cells(b(star fmt(3)) se(par fmt(3))) legend label varlabels(_cons Constant)
 		}
 
 ********************************************
