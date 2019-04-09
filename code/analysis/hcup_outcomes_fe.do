@@ -64,7 +64,7 @@ local log_file_pdf "reports/hcup_outcomes_`xvarOpt'`_aweight'.pdf"
 * Labels and misc.
 local pay_labels `""Medicare" "Medicaid" "PrivIns" "SelfPay" "NoCharge" "Other" "Missing""'
 
-local mdcs_cds 1 4 5 6 8 15 19 20 25
+local mdc_cds 1 4 5 6 8 15 19 20 25
 local mdc_labels `""Nervous System" "Respiratory System" "Ciculatory System" "Digestive System" "Newborn" "Mental Health" "Alcohol/Drug Abuse" "HIV""'
 
 * Model settings
@@ -157,7 +157,7 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", clear
     * MDCs
     	local y_mdc_logs
     	local y_mdc_props
-    	forveach cd of local mdc_cds {
+    	foreach cd of local mdc_cds {
     		ds mdc_`cd'_*_lg
     		local y_mdc_logs `y_mdc_logs' `r(varlist)'
     		ds mdc_`cd'_*_pr
@@ -242,11 +242,11 @@ n di "* * *"
 		foreach yvar of local y_ds_props {
 			local model "m_`yvar'"
 			local models `models' `model'
-			local title: word `i' of `pay_labels'
+			local payer: word `i' of `pay_labels'
 			local ++i
 
 			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
-				estimates store `model', title(`title')
+				estimates store `model', title(`payer')
 		}
 		* Output model estimates
 		noisily estout `models', title(Discharges (proportions)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
@@ -259,22 +259,54 @@ n di "* * *"
 		********************************************
 		* MDC log counts
 		local i 1
-		local mdc_n : local word count `mdc_labels'
 		foreach yvar of local y_mdc_logs {
 			local model "`m_`yvar'"
-			local title: word `i' of `mdc_labels'
-			if `i'==`mdc_n' {
-				local i 1
-			}
-			else {
-				local ++i
-			}
+			local payer: word `i' of `pay_labels'
+			if `i'==5 local i 1
+			else local ++i
 
 			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
-			estimates store `model', title(`title')
+			estimates store `model', title(`payer')
 		}
 		* Output model estimates
-		
+		noisily di in red ". . . Log Discharges of Major Diagnositc Categories . . ."
+		local i 1
+		foreach cd of local mdc_cds {
+			local models
+			forvalues p=1/5 {
+				local models `models' m_mdc_`cd'_`p'_lg
+			}
+			local title: word `i' of `mdc_labels'
+			local ++i
+
+			noisily estout `models', title(MDC: `title' (log counts)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
+		}
+
+		********************************************
+		* MDC proportions
+		local i 1
+		foreach yvar of local y_mdc_props {
+			local model "`m_`yvar'"
+			local payer: word `i' of `pay_labels'
+			if `i'==5 local i 1
+			else local ++i
+
+			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
+			estimates store `model', title(`payer')
+		}
+		* Output model estimates
+		noisily di in red ". . . Proportions of Discharges of Major Diagnostic Categories . . ."
+		local i 1
+		foreach cd of local mdc_cds {
+			local models
+			forvalues p=1/5 {
+				local models `models' m_mdc_`cd'_`p'_pr
+			}
+			local title: word `i' of `mdc_labels'
+			local ++i
+
+			noisily estout `models', title(MDC: `title' (proportions)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
+		}
 
 
 	********************************************
@@ -285,15 +317,12 @@ n di "* * *"
 		local i 1
 		foreach yvar of local y_util_logs {
 			local model "m_`yvar'"
-			local title: word `i' of `pay_labels'
-			if `i'==5 {
-				local i 1
-			}
-			else {
-				local ++i
-			}
+			local payer: word `i' of `pay_labels'
+			if `i'==5 local i 1
+			else local ++i
 
 			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
+			local payer: word `i' of `pay_labels'
 			estimates store `model', title(`title')
 		}
 		* Output model estimates
@@ -329,16 +358,12 @@ n di "* * *"
 		local i 1
 		foreach yvar of local y_util_props {
 			local model "m_`yvar'"
-			local title: word `i' of `pay_labels'
-			if `i'==5 {
-				local i 1
-			}
-			else {
-				local ++i
-			}
+			local payer: word `i' of `pay_labels'
+			if `i'==5 local i 1
+			else local ++i
 
 			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
-			estimates store `model', title(`title')
+			estimates store `model', title(`payer')
 		}
 		* Output model estimates
 			* Medicaid services
