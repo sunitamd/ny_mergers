@@ -66,7 +66,7 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_supp_collapsed.dta", clear
         * Counts
         local y_ds_cnts "discharges1 discharges2 discharges3 discharges4 discharges5"
 
-        egen discharges = total(discharges1-discharges6)
+        egen discharges = rowtotal(discharges1-discharges6)
 
         * Proportions
         foreach var of local y_ds_cnts {
@@ -87,7 +87,7 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_supp_collapsed.dta", clear
         local y_mdc_cnts
         foreach var of local y_mdc_totals {
 
-            egen `var' = total(`var'1-`var'6)
+            egen `var' = rowtotal(`var'1-`var'6)
 
             forvalues i=1/5 {
                 * Counts
@@ -112,7 +112,7 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_supp_collapsed.dta", clear
         local y_util_cnts
         foreach var of local y_util_totals {
 
-            egen `var' = total(`var'1-`var'6)
+            egen `var' = rowtotal(`var'1-`var'6)
 
             forvalues i=1/5 {
                 * Counts
