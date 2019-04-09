@@ -143,6 +143,17 @@ save `cov', replace
 
 	save `mmc', replace
 
+	* Map to AHAID from AHA-Cooper
+	use "$proj_dir/ny_mergers/data_hospclean/ahacooperall_cleaned.dta", clear
+
+	rename id ahaid
+
+	keep ahaid year cnty
+
+	merge m:1 cnty year using `mmc', keep(3) nogen
+
+	save `mmc', replace
+
 
 * HCUP NY SID Outcomes
 ********************************************
@@ -176,7 +187,7 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", clear
 	* Merge on covariates
 
 	* County Medicaid enrollment
-	merge m:1 cnty year using `mmc', assert(2 3) keep(3) nogen
+	merge 1:1 ahaid year using `mmc', keep(3) nogen
 
 	if "`xvarOpt'" == "post_anytarget" {
 		merge m:1 cnty year using `cov', assert(3) nogen
