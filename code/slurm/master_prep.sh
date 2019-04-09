@@ -28,6 +28,13 @@ cd $REPO
 
 # Construct merger, system-HHI, event-study, and market-exposure measures
     stata -q do code/build/aha/prep/construct_mergers_sd.do
+        
+
+############################################
+# MMC
+############################################
+# Import and append monthly county-level Medicaid enrollment (Orin)
+   stata -q do code/build/mmc/prep/combine_mmc.do
 
 
 ############################################
@@ -97,9 +104,3 @@ cd $REPO
     # Construct hospital-varying patient-based HHI
        stata -q do code/build/hcup/prep/construct_hhi_hospital.do
 
-
-############################################
-# MMC
-############################################
-# Import and append monthly county-level Medicaid enrollment (Orin)
-   stata -q do code/build/mmc/prep/combine_mmc.do
