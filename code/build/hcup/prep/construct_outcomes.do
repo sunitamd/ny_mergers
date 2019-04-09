@@ -30,7 +30,7 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_supp_collapsed.dta", clear
     * Gen discharges for each MDC
     levelsof mdc, local(mdc_cds) clean
     foreach mdc_cd of local mdc_cds {
-        gen mdc_`mdc_cd'_ = 1 if mdc==`mdc_cd'
+        gen mdc_`mdc_cd'_ = discharges if mdc==`mdc_cd'
     }
     qui lookfor mdc_
     local mdcs `r(varlist)'
