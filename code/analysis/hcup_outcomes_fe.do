@@ -5,7 +5,7 @@
 *		2: hospital-year discharge minimum
 *		3: aweight switch 0/1
 * Sample run command:
-*	sbatch -t 0-1 --mem=8GB slurm/stata.sh code/analysis/hcup_outcomes_fe.do "hhi_hosp" 80 1
+*	sbatch -t 0-1 --mem=8GB code/slurm/stata.sh code/analysis/hcup_outcomes_fe.do hhi_hosp 80 1
 ********************************************
 
 clear
