@@ -65,7 +65,7 @@ local log_file_pdf "reports/hcup_outcomes_`xvarOpt'`_aweight'.pdf"
 local pay_labels `""Medicare" "Medicaid" "PrivIns" "SelfPay" "NoCharge" "Other" "Missing""'
 
 local mdc_cds 1 4 5 6 8 15 19 20 25
-local mdc_labels `""Nervous System" "Respiratory System" "Ciculatory System" "Digestive System" "Newborn" "Mental Health" "Alcohol/Drug Abuse" "HIV""'
+local mdc_labels `""Nervous System" "Respiratory System" "Ciculatory System" "Digestive System" "Musculoskeletal System" "Newborn" "Mental Health" "Alcohol/Drug Abuse" "HIV""'
 
 * Model settings
 if "`xvarOpt'" == "post_anytarget" {
@@ -318,91 +318,6 @@ n di "* * *"
 
 			noisily estout `models', title(MDC: `title' (proportions)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
 		}
-
-
-	********************************************
-	* Utilization flag models
-	********************************************
-		********************************************
-		* Utilization log counts
-		local i 1
-		foreach yvar of local y_util_logs {
-			local model "m_`yvar'"
-			local payer: word `i' of `pay_labels'
-			if `i'==5 local i 1
-			else local ++i
-
-			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
-			local payer: word `i' of `pay_labels'
-			estimates store `model', title(`title')
-		}
-		* Output model estimates
-			* Medicaid associated services
-			noisily di in red ". . . Medicaid associated services . . ."
-			local i 1
-			foreach util of local util_medicaid {
-				local models
-				forvalues p=1/5 {
-					local models `models' m_`util'`p'_lg
-				}
-				local title: word `i' of `util_medicaid_labels'
-				local ++i
-
-				noisily estout `models', title(Service Util: `title' (log counts)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
-			}
-			* Private insurance associated services
-			noisily di in red ". . . Private insurance associated services . . ."
-			local i 1
-			foreach util of local util_privins {
-				local models
-				forvalues p=1/5 {
-					local models `models' m_`util'`p'_lg
-				}
-				local title: word `i' of `util_privins_labels'
-				local ++i
-
-				noisily estout `models', title(Service Util: `title' (log counts)) cell(b(star fmt(2)) se(par fmt(2)))  legend label varlabels(_cons Constant)
-			}
-
-		********************************************
-		* Utiliztion proportions
-		local i 1
-		foreach yvar of local y_util_props {
-			local model "m_`yvar'"
-			local payer: word `i' of `pay_labels'
-			if `i'==5 local i 1
-			else local ++i
-
-			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
-			estimates store `model', title(`payer')
-		}
-		* Output model estimates
-			* Medicaid services
-			noisily di in red ". . . Medicaid services . . ."
-			local i 1
-			foreach util of local util_medicaid {
-				local models
-				forvalues p=1/5 {
-					local models `models' m_`util'`p'_pr
-				}
-				local title: word `i' of `util_medicaid_labels'
-				local ++i
-
-				noisily estout `models', title(Service Util: `title' (proportions)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
-			}
-			* Private insurance services
-			noisily di in red ". . . Private insurance services . . ."
-			local i 1
-			foreach util of local util_privins {
-				local models
-				forvalues p=1/5 {
-					local models `models' m_`util'`p'_pr
-				}
-				local title: word `i' of `util_privins_labels'
-				local ++i
-
-				noisily estout `models', title(Service Util: `title' (proportions)) cell(b(star fmt(2)) se(par fmt(2)))  legend label varlabels(_cons Constant)
-			}
 
 ********************************************
 } // end quietly block
