@@ -67,7 +67,7 @@ ggplot(mdc, aes(reorder(mdc, -Medicaid), ds, fill=pay1)) +
 
 # Collapse drg codes by payer
 drg <- hcup %>%
-    group_by(pay1, drg) %>%
+    group_by(pay1, mdc, drg) %>%
         summarise(ds=n()) %>%
         ungroup() %>%
     mutate(
