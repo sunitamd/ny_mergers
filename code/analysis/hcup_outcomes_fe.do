@@ -236,7 +236,6 @@ xtset `panelvar_id' year, yearly
 		local i 1
 		foreach yvar of local y_ds_logs {
 			local model "m_`yvar'"
-			local models `models' `model'
 			local title: word `i' of `pay_labels'
 			local ++i
 
@@ -245,6 +244,7 @@ xtset `panelvar_id' year, yearly
 
 			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
 			estimates store `model', title(`title')
+			local models `models' `model'
 		}
 		noisily estout `models' using "reports/hcup_analysis.tex", title(Discharges (log counts)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant) replace style(tex)
 
@@ -254,7 +254,6 @@ xtset `panelvar_id' year, yearly
 		local i 1
 		foreach yvar of local y_ds_props {
 			local model "m_`yvar'"
-			local models `models' `model'
 			local payer: word `i' of `pay_labels'
 			local ++i
 
@@ -263,6 +262,7 @@ xtset `panelvar_id' year, yearly
 
 			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
 			estimates store `model', title(`payer')
+			local models `models' `model'
 		}
 		* Output model estimates
 		noisily estout `models' using "reports/hcup_analysis.tex", title(Discharges (proportions)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant) append style(tex)
@@ -289,17 +289,13 @@ xtset `panelvar_id' year, yearly
 		}
 		* Output model estimates
 		noisily di in red ". . . Log Discharges of Major Diagnositc Categories . . ."
-		local i 1
 		foreach cd of local mdc_cds {
 			local models
-			forvalues p=1/5 {
-				local models `models' m_mdc_`cd'_`p'_lg
-			}
-			local title: word `i' of `mdc_labels'
-			local ++i
-
 			* Only run for certain payers
-			if !inlist(`i'-1, 2,3) continue
+			forvalues p=2/3 {
+				local models `models' m_mdc_`cd'_`p'_lg
+				local title: word `p' of `mdc_labels'
+			}
 
 			noisily estout `models' using "reports/hcup_analysis.tex", title(MDC: `title' (log counts)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant) append style(tex)
 		}
@@ -321,17 +317,13 @@ xtset `panelvar_id' year, yearly
 		}
 		* Output model estimates
 		noisily di in red ". . . Proportions of Discharges of Major Diagnostic Categories . . ."
-		local i 1
 		foreach cd of local mdc_cds {
 			local models
-			forvalues p=1/5 {
-				local models `models' m_mdc_`cd'_`p'_pr
-			}
-			local title: word `i' of `mdc_labels'
-			local ++i
-
 			* Only run for certain payers
-			if !inlist(`i'-1, 2,3) continue
+			forvalues p=2/3 {
+				local models `models' m_mdc_`cd'_`p'_pr
+				local title: word `p' of `mdc_labels'
+			}
 
 			noisily estout `models' using "reports/hcup_analysis.tex", title(MDC: `title' (proportions)) cells(b(star fmt(3)) se(par fmt(3))) legend label varlabels(_cons Constant) append style(tex)
 		}
