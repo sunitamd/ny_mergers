@@ -240,10 +240,13 @@ xtset `panelvar_id' year, yearly
 			local title: word `i' of `pay_labels'
 			local ++i
 
+			* Only run for certain payers
+			if !inlist(`i'-1, 2,3) continue
+
 			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
 			estimates store `model', title(`title')
 		}
-		noisily estout `models', title(Discharges (log counts)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
+		noisily estout `models', title(Discharges (log counts)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant) using("reports/hcup_analysis.tex") replace style(tex)
 
 		********************************************
 		* Discharge proportions
@@ -255,11 +258,14 @@ xtset `panelvar_id' year, yearly
 			local payer: word `i' of `pay_labels'
 			local ++i
 
+			* Only run for certain payers
+			if !inlist(`i'-1, 2,3) continue
+
 			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
-				estimates store `model', title(`payer')
+			estimates store `model', title(`payer')
 		}
 		* Output model estimates
-		noisily estout `models', title(Discharges (proportions)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
+		noisily estout `models', title(Discharges (proportions)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant) using("reports/hcup_analysis.tex") append style(tex)
 
 
 	********************************************
@@ -275,6 +281,9 @@ xtset `panelvar_id' year, yearly
 			if `i'==5 local i 1
 			else local ++i
 
+			* Only run for certain payers
+			if !inlist(`i'-1, 2,3) continue
+
 			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
 			estimates store `model', title(`payer')
 		}
@@ -289,7 +298,10 @@ xtset `panelvar_id' year, yearly
 			local title: word `i' of `mdc_labels'
 			local ++i
 
-			noisily estout `models', title(MDC: `title' (log counts)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
+			* Only run for certain payers
+			if !inlist(`i'-1, 2,3) continue
+
+			noisily estout `models', title(MDC: `title' (log counts)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant) using("reports/hcup_analysis.tex") append style(tex)
 		}
 
 		********************************************
@@ -300,6 +312,9 @@ xtset `panelvar_id' year, yearly
 			local payer: word `i' of `pay_labels'
 			if `i'==5 local i 1
 			else local ++i
+
+			* Only run for certain payers
+			if !inlist(`i'-1, 2,3) continue
 
 			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
 			estimates store `model', title(`payer')
@@ -315,7 +330,10 @@ xtset `panelvar_id' year, yearly
 			local title: word `i' of `mdc_labels'
 			local ++i
 
-			noisily estout `models', title(MDC: `title' (proportions)) cells(b(star fmt(3)) se(par fmt(3))) legend label varlabels(_cons Constant)
+			* Only run for certain payers
+			if !inlist(`i'-1, 2,3) continue
+
+			noisily estout `models', title(MDC: `title' (proportions)) cells(b(star fmt(3)) se(par fmt(3))) legend label varlabels(_cons Constant) using("reports/hcup_analysis.tex") append style(tex)
 		}
 
 ********************************************
