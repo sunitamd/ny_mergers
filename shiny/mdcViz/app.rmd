@@ -1,4 +1,5 @@
 ---
+title: HCUP NY SID Admissions within MDCs
 runtime: shiny
 output: html_document
 ---
@@ -24,7 +25,7 @@ library(haven)
 drgs <- read_dta('drgs.dta')
 drgs <- drgs %>%
     mutate(pay1=factor(as.numeric(pay1), levels=1:6, labels=c('Medicare', 'Medicaid', 'Private', 'SelfPay', 'NoCharge', 'Other'), ordered=FALSE))
-drgs_spread <- spread(drg, pay1, ds, fill=0)
+drgs_spread <- spread(drgs, pay1, ds, fill=0)
 
 icds <- read_dta('icds.dta')
 icds <- icds %>%
@@ -39,7 +40,7 @@ names(mdc_choices) <- mdc_names
 
 ```{r functions}
 # scatter DRGs by specific MDCs
-scatterByMDC <- function(mdc, df_spread, yvar='drg' .mdc_names=mdc_names) {
+scatterByMDC <- function(mdc, df_spread, yvar='drg', .mdc_names=mdc_names) {
 
     # y variable name
     yvar_name <- paste0(str_to_upper(yvar), ': ')
@@ -54,25 +55,26 @@ scatterByMDC <- function(mdc, df_spread, yvar='drg' .mdc_names=mdc_names) {
     p <- ggplot(df, aes(Medicaid, Private, alpha=Total, text=paste0(yvar_name, !!yvar))) +
             geom_point(pch=20) +
             geom_abline(intercept=0, slope=1, color='tomato4', linetype='dashed', alpha=0.6) +
-            scale_alpha(name='Total discharges', range=c(0.4,1)) +
+            scale_alpha(name='Total admissions', range=c(0.4,1)) +
             theme_minimal()
     ggplotly(p)
 }
 ```
 
+Scatterplots include all admissions from HCUP NY SID 2006-2012
 
-# DRG Scatters within Major Diagnostic Categories
 ```{r input mdc, include=TRUE}
-selectInput('mdc', 'MDC Group:', mdc_choices)
+selectInput('mdc', 'Select MDC Group:', mdc_choices)
 ```
 
+## Admissions by DRG
 ```{r output drg, include=TRUE}
 renderPlotly({
         scatterByMDC(mdc=input$mdc, df_spread=drgs_spread, yvar='drg')
     })
 ```
 
-# ICD Primary DX within Major Diagnostic Categories
+## Admissions by Primary DX ICD
 ```{r output dx1, include=TRUE}
 renderPlotly({
     scatterByMDC(mdc=input$mdc, df_spread=icds_spread, yvar='dx1')
