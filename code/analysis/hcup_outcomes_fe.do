@@ -246,7 +246,7 @@ xtset `panelvar_id' year, yearly
 			estimates store `model', title(`title')
 			local models `models' `model'
 		}
-		noisily estout `models' using "reports/hcup_analysis.tex", title(Discharges (log counts)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant) replace style(tex)
+		noisily estout `models' using "reports/hcup_analysis.tex", title(Discharges (log counts)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant) replace style(tab)
 
 		********************************************
 		* Discharge proportions
@@ -265,7 +265,7 @@ xtset `panelvar_id' year, yearly
 			local models `models' `model'
 		}
 		* Output model estimates
-		noisily estout `models' using "reports/hcup_analysis.tex", title(Discharges (proportions)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant) append style(tex)
+		noisily estout `models' using "reports/hcup_analysis.tex", title(Discharges (proportions)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant) append style(tab)
 
 
 	********************************************
@@ -297,7 +297,7 @@ xtset `panelvar_id' year, yearly
 				local title: word `p' of `mdc_labels'
 			}
 
-			noisily estout `models' using "reports/hcup_analysis.tex", title(MDC: `title' (log counts)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant) append style(tex)
+			noisily estout `models' using "reports/hcup_analysis.tex", title(MDC: `title' (log counts)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant) append style(tab)
 		}
 
 		********************************************
@@ -325,7 +325,7 @@ xtset `panelvar_id' year, yearly
 				local title: word `p' of `mdc_labels'
 			}
 
-			noisily estout `models' using "reports/hcup_analysis.tex", title(MDC: `title' (proportions)) cells(b(star fmt(3)) se(par fmt(3))) keep(`xvar') legend label varlabels(_cons Constant) append style(tex)
+			noisily estout `models' using "reports/hcup_analysis.tex", title(MDC: `title' (proportions)) cells(b(star fmt(3)) se(par fmt(3))) keep(`xvar') legend label varlabels(_cons Constant) append style(tab)
 		}
 
 ********************************************
