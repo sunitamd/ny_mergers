@@ -69,15 +69,15 @@ local mdc_labels `""Nervous System" "Respiratory System" "Ciculatory System" "Di
 
 * Model settings
 if "`xvarOpt'" == "post_anytarget" {
-	local xvars i.post_anytarget
+	local xvar i.post_anytarget
 }
 else if "`xvarOpt'" == "hhi_hosp" {
-	local xvars hhi_hosp
+	local xvar hhi_hosp
 }
 else if "`xvarOpt'" == "hhi_avg_hhisys_cnty_T" {
-	local xvars "i.hhi_avg_hhisys_cnty_T"
+	local xvar "i.hhi_avg_hhisys_cnty_T"
 }
-local xvars "`xvars' i.year total_enroll_log"
+local xvars "`xvar' i.year total_enroll_log"
 local panelvar ahaid
 local panelvar_id "`panelvar'_id"
 local cluster_var cnty
@@ -246,7 +246,7 @@ xtset `panelvar_id' year, yearly
 			estimates store `model', title(`title')
 			local models `models' `model'
 		}
-		noisily estout `models' using "reports/hcup_analysis.tex", title(Discharges (log counts)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant) replace style(tex)
+		noisily estout `models' using "reports/hcup_analysis.tex", title(Discharges (log counts)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant) replace style(tex)
 
 		********************************************
 		* Discharge proportions
@@ -265,7 +265,7 @@ xtset `panelvar_id' year, yearly
 			local models `models' `model'
 		}
 		* Output model estimates
-		noisily estout `models' using "reports/hcup_analysis.tex", title(Discharges (proportions)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant) append style(tex)
+		noisily estout `models' using "reports/hcup_analysis.tex", title(Discharges (proportions)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant) append style(tex)
 
 
 	********************************************
@@ -297,7 +297,7 @@ xtset `panelvar_id' year, yearly
 				local title: word `p' of `mdc_labels'
 			}
 
-			noisily estout `models' using "reports/hcup_analysis.tex", title(MDC: `title' (log counts)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant) append style(tex)
+			noisily estout `models' using "reports/hcup_analysis.tex", title(MDC: `title' (log counts)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant) append style(tex)
 		}
 
 		********************************************
@@ -325,7 +325,7 @@ xtset `panelvar_id' year, yearly
 				local title: word `p' of `mdc_labels'
 			}
 
-			noisily estout `models' using "reports/hcup_analysis.tex", title(MDC: `title' (proportions)) cells(b(star fmt(3)) se(par fmt(3))) legend label varlabels(_cons Constant) append style(tex)
+			noisily estout `models' using "reports/hcup_analysis.tex", title(MDC: `title' (proportions)) cells(b(star fmt(3)) se(par fmt(3))) keep(`xvar') legend label varlabels(_cons Constant) append style(tex)
 		}
 
 ********************************************
