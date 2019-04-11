@@ -17,7 +17,7 @@ proj_dir <- '/gpfs/data/desailab/home/'
 ############################################
 
 # Check if RDS of full HCUP data already exists
-if (~file.exists(paste0(proj_dir, 'data_sidclean/sid_work/ny_sid_0612_supp.rds'))) {
+if (!file.exists(paste0(proj_dir, 'data_sidclean/sid_work/ny_sid_0612_supp.rds'))) {
     hcup <- read_dta(paste0(proj_dir, 'data_sidclean/sid_work/ny_sid_0612_supp.dta'))
     hcup <- as.data.table(hcup)
     saveRDS(hcup, paste0(proj_dir, 'data_sidclean/sid_work/ny_sid_0612_supp.rds'))
