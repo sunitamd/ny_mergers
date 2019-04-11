@@ -2,6 +2,8 @@ code/temp/
 data/
 dump/
 logs/
+shiny/**/*.dta
+shiny/**/*.rds
 *.DS_Store
 
 # History files
