@@ -52,7 +52,7 @@ scatterByMDC <- function(mdc, df_spread, yvar='drg', .mdc_names=mdc_names) {
         rowwise() %>%
         mutate(Total=sum(Medicare, Medicaid, Private, NoCharge, Other))
 
-    p <- ggplot(df, aes(Medicaid, Private, alpha=Total, text=paste0(yvar_name, !!yvar))) +
+    p <- ggplot(df, aes(Medicaid, Private, alpha=Total, text=paste0(yvar_name, get(yvar)))) +
             geom_point(pch=20) +
             geom_abline(intercept=0, slope=1, color='tomato4', linetype='dashed', alpha=0.6) +
             scale_alpha(name='Total admissions', range=c(0.4,1)) +
