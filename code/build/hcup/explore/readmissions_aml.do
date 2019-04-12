@@ -16,8 +16,8 @@ gen daysfrom_disch= los - daystoevent
 
 gen readmit =.
 
-by visitlink: replace readmit=1 if daysfrom_disch < 31
-
+by visitlink: replace readmit=1 if daysfrom_disch < 30
+}
 
 
 
