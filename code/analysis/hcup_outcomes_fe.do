@@ -250,7 +250,7 @@ xtset `panelvar_id' year, yearly
 			estimates store `model', title(`title')
 			local models `models' `model'
 		}
-		noisily estout `models' using "reports/hcup_analysis.tex", title(Admissions (log counts)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant) replace style(tab)
+		noisily estout `models', title(Admissions (log counts)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant)
 
 		********************************************
 		* Admission proportions
@@ -269,7 +269,7 @@ xtset `panelvar_id' year, yearly
 			local models `models' `model'
 		}
 		* Output model estimates
-		noisily estout `models' using "reports/hcup_analysis.tex", title(Admissions (proportions)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant) append style(tab)
+		noisily estout `models', title(Admissions (proportions)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant)
 
 
 	********************************************
@@ -310,7 +310,7 @@ xtset `panelvar_id' year, yearly
 			local title: word `i' of `mdc_labels'
 			local ++i
 
-			noisily estout `models' using "reports/hcup_analysis.tex", title(MDC: `title' (log counts)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant) append style(tab)
+			noisily estout `models', title(MDC: `title' (log counts)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant)
 		}
 
 		********************************************
@@ -323,7 +323,7 @@ xtset `panelvar_id' year, yearly
 
 				local aweight_opt [aweight=patients_mdc`cd']
 			}
-			
+
 			local model "m_`yvar'"
 			local payer: word `i' of `pay_labels'
 			if `i'==5 local i 1
@@ -346,7 +346,7 @@ xtset `panelvar_id' year, yearly
 			}
 			local title: word `i' of `mdc_labels'
 
-			noisily estout `models' using "reports/hcup_analysis.tex", title(MDC: `title' (proportions)) cells(b(star fmt(3)) se(par fmt(3))) keep(`xvar') legend label varlabels(_cons Constant) append style(tab)
+			noisily estout `models', title(MDC: `title' (proportions)) cells(b(star fmt(3)) se(par fmt(3))) keep(`xvar') legend label varlabels(_cons Constant)
 		}
 
 ********************************************
