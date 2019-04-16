@@ -69,15 +69,15 @@ local mdc_labels `""Nervous System" "Respiratory System" "Ciculatory System" "Di
 
 * Model settings
 if "`xvarOpt'" == "post_anytarget" {
-	local xvars i.post_anytarget
+	local xvar i.post_anytarget
 }
 else if "`xvarOpt'" == "hhi_hosp" {
-	local xvars hhi_hosp
+	local xvar hhi_hosp
 }
 else if "`xvarOpt'" == "hhi_avg_hhisys_cnty_T" {
-	local xvars "i.hhi_avg_hhisys_cnty_T"
+	local xvar "i.hhi_avg_hhisys_cnty_T"
 }
-local xvars "`xvars' i.year total_enroll_log"
+local xvars "`xvar' i.year total_enroll_log"
 local panelvar ahaid
 local panelvar_id "`panelvar'_id"
 local cluster_var cnty
@@ -207,6 +207,10 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", clear
 	********************************************
 	* Analytical weights
 	if `aweight' == 1 {
+		* Merge on mdc-patient weights
+		merge m:1 ahaid using "$proj_dir/ny_mergers/data_analytic/hospital_weights.dta", keep(3) nogen
+
+		* Calculate log discharge weights
 		bysort ahaid: egen discharges_year = mean(discharges)
 			label var discharges_year "Avg. discharges per year"
 		gen discharges_year_log = log(discharges_year)
@@ -228,94 +232,126 @@ encode `panelvar', gen(`panelvar_id')
 xtset `panelvar_id' year, yearly
 
 	********************************************
-	* Discharge models
-	noisily di in red "* * * DISCHARGES * * *"
+	* ADMISSION MODELS
+	noisily di in red "* * * ADMISSIONS * * *"
 		********************************************
-		* Discharge log counts
+		* Admission log counts
 		local models
 		local i 1
 		foreach yvar of local y_ds_logs {
 			local model "m_`yvar'"
-			local models `models' `model'
 			local title: word `i' of `pay_labels'
 			local ++i
 
+			* Only run for certain payers
+			if !inlist(`i'-1, 2,3) continue
+
 			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
 			estimates store `model', title(`title')
+			local models `models' `model'
 		}
-		noisily estout `models', title(Discharges (log counts)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
+		noisily estout `models', title(Admissions (log counts)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant)
+		esttab `models' using "outputs/hcup_outcomes`_aweight'.csv", b() se() keep(`xvar') wide noparen noobs plain replace
 
 		********************************************
-		* Discharge proportions
+		* Admission proportions
 		local models
 		local i 1
 		foreach yvar of local y_ds_props {
 			local model "m_`yvar'"
-			local models `models' `model'
 			local payer: word `i' of `pay_labels'
 			local ++i
 
+			* Only run for certain payers
+			if !inlist(`i'-1, 2,3) continue
+
 			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
-				estimates store `model', title(`payer')
+			estimates store `model', title(`payer')
+			local models `models' `model'
 		}
 		* Output model estimates
-		noisily estout `models', title(Discharges (proportions)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
+		noisily estout `models', title(Admissions (proportions)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant)
+		esttab `models' using "outputs/hcup_outcomes`_aweight'.csv", b() se() keep(`xvar') wide noparen noobs plain append
 
 
 	********************************************
-	* MDC models
+	* MDC MODELS
 	********************************************
-	noisily di in red "* * * DISCHARGES BY MAJOR DIAGNOSTIC CATEGORY * * *"
+	noisily di in red "* * * ADMISSIONS BY MAJOR DIAGNOSTIC CATEGORY * * *"
 		********************************************
 		* MDC log counts
 		local i 1
 		foreach yvar of local y_mdc_logs {
+			* Adjust aweight for specific MDC
+			if `aweight'==1 {
+				local cd = substr("`yvar'", 5, 1)
+
+				local aweight_opt [aweight=patients_mdc`cd']
+			}
+
 			local model "m_`yvar'"
 			local payer: word `i' of `pay_labels'
 			if `i'==5 local i 1
 			else local ++i
 
+			* Only run for certain payers
+			if !inlist(`i'-1, 2,3) continue
+
 			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
 			estimates store `model', title(`payer')
 		}
 		* Output model estimates
-		noisily di in red ". . . Log Discharges of Major Diagnositc Categories . . ."
+		noisily di in red ". . . Log Admissions of Major Diagnositc Categories . . ."
 		local i 1
 		foreach cd of local mdc_cds {
 			local models
-			forvalues p=1/5 {
+			* Only run for certain payers
+			forvalues p=2/3 {
 				local models `models' m_mdc_`cd'_`p'_lg
 			}
 			local title: word `i' of `mdc_labels'
 			local ++i
 
-			noisily estout `models', title(MDC: `title' (log counts)) cells(b(star fmt(2)) se(par fmt(2))) legend label varlabels(_cons Constant)
+			noisily estout `models', title(MDC: `title' (log counts)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant)
+		esttab `models' using "outputs/hcup_outcomes`_aweight'.csv", b() se() keep(`xvar') wide noparen noobs plain append
 		}
 
 		********************************************
 		* MDC proportions
 		local i 1
 		foreach yvar of local y_mdc_props {
+			* Adjust aweight for specific MDC
+			if `aweight'==1 {
+				local cd = substr("`yvar'", 5, 1)
+
+				local aweight_opt [aweight=patients_mdc`cd']
+			}
+
 			local model "m_`yvar'"
 			local payer: word `i' of `pay_labels'
 			if `i'==5 local i 1
 			else local ++i
 
+			* Only run for certain payers
+			if !inlist(`i'-1, 2,3) continue
+
 			xtreg `yvar' `xvars' `aweight_opt', fe vce(cluster `cluster_var')
 			estimates store `model', title(`payer')
 		}
 		* Output model estimates
-		noisily di in red ". . . Proportions of Discharges of Major Diagnostic Categories . . ."
+		noisily di in red ". . . Proportions of Admissions by Major Diagnostic Categories . . ."
 		local i 1
 		foreach cd of local mdc_cds {
 			local models
-			forvalues p=1/5 {
+			* Only run for certain payers
+			forvalues p=2/3 {
 				local models `models' m_mdc_`cd'_`p'_pr
 			}
 			local title: word `i' of `mdc_labels'
 			local ++i
 
-			noisily estout `models', title(MDC: `title' (proportions)) cells(b(star fmt(3)) se(par fmt(3))) legend label varlabels(_cons Constant)
+			noisily estout `models', title(MDC: `title' (proportions)) cells(b(star fmt(3)) se(par fmt(3))) keep(`xvar') legend label varlabels(_cons Constant)
+		esttab `models' using "outputs/hcup_outcomes`_aweight'.csv", b() se() keep(`xvar') wide noparen noobs plain append
 		}
 
 ********************************************

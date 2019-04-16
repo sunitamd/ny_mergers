@@ -40,7 +40,7 @@ if (Sys.info()['sysname'] == 'unix') {
         hcup <- readRDS(paste0(proj_dir, 'ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp.rds'))
     }
 } else {
-    hcup <- readRDS('dump/ny_sid_0612_supp.rds')
+    hcup <- readRDS('dump/ny_sid_0612_supp_sample.rds')
 }
 
 mdc_labels <- c('Pre-MDC', 'Nervous', 'Eye', 'Ear,Nose,Mouth,Throat', 'Respiratory', 'Circulatory', 'Digestive', 'Hepatobiliary & Pancreas', 'Musculoskeletal', 'Skin', 'Endocrine', 'Kidney/UT', 'Male Reprod.', 'Female Reprod.', 'Pregnancy', 'Newborn', 'Blood/Immunological', 'Myeloproliferative', 'Infections/Parasitic', 'Mental', 'Alcohol/Drug', 'Injuries/Poision', 'Burns', 'Health Status/Services', 'Trauma', 'HIV')
