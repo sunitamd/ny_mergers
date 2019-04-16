@@ -49,4 +49,4 @@ use pay1 visitlink mdc ahaid year using "$proj_dir/ny_mergers/data_sidclean/sid_
 
     * Save
     save "$proj_dir/ny_mergers/data_analytic/hospital_weights.dta", replace
-    !chmod g+rw "$proj_dir/ny_mergers/data_anaytic/hospital_weights.dta"
+    !chmod g+rw "$proj_dir/ny_mergers/data_analytic/hospital_weights.dta"
