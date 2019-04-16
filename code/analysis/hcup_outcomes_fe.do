@@ -207,6 +207,10 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", clear
 	********************************************
 	* Analytical weights
 	if `aweight' == 1 {
+		* Merge on mdc-patient weights
+		merge 1:1 ahaid year using "$proj_dir/ny_mergers/data_analytic/hospital_weights.dta", keep(3) nogen
+
+		* Calculate log discharge weights
 		bysort ahaid: egen discharges_year = mean(discharges)
 			label var discharges_year "Avg. discharges per year"
 		gen discharges_year_log = log(discharges_year)
@@ -289,13 +293,15 @@ xtset `panelvar_id' year, yearly
 		}
 		* Output model estimates
 		noisily di in red ". . . Log Discharges of Major Diagnositc Categories . . ."
+		local i 1
 		foreach cd of local mdc_cds {
 			local models
 			* Only run for certain payers
 			forvalues p=2/3 {
 				local models `models' m_mdc_`cd'_`p'_lg
-				local title: word `p' of `mdc_labels'
 			}
+			local title: word `i' of `mdc_labels'
+			local ++i
 
 			noisily estout `models' using "reports/hcup_analysis.tex", title(MDC: `title' (log counts)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant) append style(tab)
 		}
@@ -317,13 +323,14 @@ xtset `panelvar_id' year, yearly
 		}
 		* Output model estimates
 		noisily di in red ". . . Proportions of Discharges of Major Diagnostic Categories . . ."
+		local i 1
 		foreach cd of local mdc_cds {
 			local models
 			* Only run for certain payers
 			forvalues p=2/3 {
 				local models `models' m_mdc_`cd'_`p'_pr
-				local title: word `p' of `mdc_labels'
 			}
+			local title: word `i' of `mdc_labels'
 
 			noisily estout `models' using "reports/hcup_analysis.tex", title(MDC: `title' (proportions)) cells(b(star fmt(3)) se(par fmt(3))) keep(`xvar') legend label varlabels(_cons Constant) append style(tab)
 		}
