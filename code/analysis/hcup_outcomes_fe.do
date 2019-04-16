@@ -348,6 +348,7 @@ xtset `panelvar_id' year, yearly
 				local models `models' m_mdc_`cd'_`p'_pr
 			}
 			local title: word `i' of `mdc_labels'
+			local ++i
 
 			noisily estout `models', title(MDC: `title' (proportions)) cells(b(star fmt(3)) se(par fmt(3))) keep(`xvar') legend label varlabels(_cons Constant)
 		esttab `models' using "outputs/hcup_outcomes`_aweight'.csv", b() se() keep(`xvar') wide noparen noobs plain append
