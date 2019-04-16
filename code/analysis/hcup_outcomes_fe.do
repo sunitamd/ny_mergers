@@ -251,6 +251,7 @@ xtset `panelvar_id' year, yearly
 			local models `models' `model'
 		}
 		noisily estout `models', title(Admissions (log counts)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant)
+		esttab `models' using "outputs/hcup_outcomes`_aweight'.csv", b() se() keep(`xvar') wide noparen noobs plain replace
 
 		********************************************
 		* Admission proportions
@@ -270,6 +271,7 @@ xtset `panelvar_id' year, yearly
 		}
 		* Output model estimates
 		noisily estout `models', title(Admissions (proportions)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant)
+		esttab `models' using "outputs/hcup_outcomes`_aweight'.csv", b() se() keep(`xvar') wide noparen noobs plain append
 
 
 	********************************************
@@ -311,6 +313,7 @@ xtset `panelvar_id' year, yearly
 			local ++i
 
 			noisily estout `models', title(MDC: `title' (log counts)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant)
+		esttab `models' using "outputs/hcup_outcomes`_aweight'.csv", b() se() keep(`xvar') wide noparen noobs plain append
 		}
 
 		********************************************
@@ -347,6 +350,7 @@ xtset `panelvar_id' year, yearly
 			local title: word `i' of `mdc_labels'
 
 			noisily estout `models', title(MDC: `title' (proportions)) cells(b(star fmt(3)) se(par fmt(3))) keep(`xvar') legend label varlabels(_cons Constant)
+		esttab `models' using "outputs/hcup_outcomes`_aweight'.csv", b() se() keep(`xvar') wide noparen noobs plain append
 		}
 
 ********************************************
