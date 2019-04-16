@@ -32,19 +32,21 @@ use pay1 visitlink mdc ahaid year using "$proj_dir/ny_mergers/data_sidclean/sid_
     * Drop if no patient ID
     drop if visitlink==.
 
+    * keep only data from the first year
+    bysort ahaid: egen first_year = min(year)
+    keep if year==first_year
+
     * collapse from admissions-level to patient-level
-    keep visitlink mdc ahaid year
+    keep visitlink mdc ahaid
     duplicates drop
 
     gen patient = 1
         label var patient "Unique patient count"
 
-    tostring year, replace
     tostring mdc, replace
 
-    fcollapse (sum) patients=patient, by(ahaid year mdc) fast
+    fcollapse (sum) patients=patient, by(ahaid mdc) fast
 
-    destring year, replace
     destring mdc, replace
 
     drop if ahaid==""
@@ -52,7 +54,7 @@ use pay1 visitlink mdc ahaid year using "$proj_dir/ny_mergers/data_sidclean/sid_
     * reshape wide
     rename patients patients_mdc
 
-    reshape wide patients_mdc, i(ahaid year) j(mdc)
+    reshape wide patients_mdc, i(ahaid) j(mdc)
 
     * Generate log weights
     ds patients_mdc*
