@@ -232,10 +232,10 @@ encode `panelvar', gen(`panelvar_id')
 xtset `panelvar_id' year, yearly
 
 	********************************************
-	* Discharge models
-	noisily di in red "* * * DISCHARGES * * *"
+	* ADMISSION MODELS
+	noisily di in red "* * * ADMISSIONS * * *"
 		********************************************
-		* Discharge log counts
+		* Admission log counts
 		local models
 		local i 1
 		foreach yvar of local y_ds_logs {
@@ -250,10 +250,10 @@ xtset `panelvar_id' year, yearly
 			estimates store `model', title(`title')
 			local models `models' `model'
 		}
-		noisily estout `models' using "reports/hcup_analysis.tex", title(Discharges (log counts)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant) replace style(tab)
+		noisily estout `models' using "reports/hcup_analysis.tex", title(Admissions (log counts)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant) replace style(tab)
 
 		********************************************
-		* Discharge proportions
+		* Admission proportions
 		local models
 		local i 1
 		foreach yvar of local y_ds_props {
@@ -269,17 +269,20 @@ xtset `panelvar_id' year, yearly
 			local models `models' `model'
 		}
 		* Output model estimates
-		noisily estout `models' using "reports/hcup_analysis.tex", title(Discharges (proportions)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant) append style(tab)
+		noisily estout `models' using "reports/hcup_analysis.tex", title(Admissions (proportions)) cells(b(star fmt(2)) se(par fmt(2))) keep(`xvar') legend label varlabels(_cons Constant) append style(tab)
 
 
 	********************************************
-	* MDC models
+	* MDC MODELS
 	********************************************
-	noisily di in red "* * * DISCHARGES BY MAJOR DIAGNOSTIC CATEGORY * * *"
+	noisily di in red "* * * ADMISSIONS BY MAJOR DIAGNOSTIC CATEGORY * * *"
 		********************************************
 		* MDC log counts
 		local i 1
 		foreach yvar of local y_mdc_logs {
+			* Adjust aweight for specific mdc
+			local aweight_opt [aweight=patients_mdc`cd']
+
 			local model "m_`yvar'"
 			local payer: word `i' of `pay_labels'
 			if `i'==5 local i 1
@@ -292,7 +295,7 @@ xtset `panelvar_id' year, yearly
 			estimates store `model', title(`payer')
 		}
 		* Output model estimates
-		noisily di in red ". . . Log Discharges of Major Diagnositc Categories . . ."
+		noisily di in red ". . . Log Admissions of Major Diagnositc Categories . . ."
 		local i 1
 		foreach cd of local mdc_cds {
 			local models
@@ -322,7 +325,7 @@ xtset `panelvar_id' year, yearly
 			estimates store `model', title(`payer')
 		}
 		* Output model estimates
-		noisily di in red ". . . Proportions of Discharges of Major Diagnostic Categories . . ."
+		noisily di in red ". . . Proportions of Admissions by Major Diagnostic Categories . . ."
 		local i 1
 		foreach cd of local mdc_cds {
 			local models
