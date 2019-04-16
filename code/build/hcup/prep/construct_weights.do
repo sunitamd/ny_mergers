@@ -24,7 +24,7 @@ global proj_dir "/gpfs/data/desailab/home"
 
 * HCUP NY SID SUPP data
 ********************************************
-use "$proj_dir/ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp.dta", clear
+use pay1 visitlink mdc ahaid year using "$proj_dir/ny_mergers/data_sidclean/sid_work/ny_sid_0612_supp.dta", clear
 
     * keep private insurance
     keep if pay1==3
