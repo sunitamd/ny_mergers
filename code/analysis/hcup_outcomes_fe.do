@@ -208,7 +208,7 @@ use "$proj_dir/ny_mergers/data_analytic/hcup_ny_sid_outcomes.dta", clear
 	* Analytical weights
 	if `aweight' == 1 {
 		* Merge on mdc-patient weights
-		merge 1:1 ahaid year using "$proj_dir/ny_mergers/data_analytic/hospital_weights.dta", keep(3) nogen
+		merge m:1 ahaid using "$proj_dir/ny_mergers/data_analytic/hospital_weights.dta", keep(3) nogen
 
 		* Calculate log discharge weights
 		bysort ahaid: egen discharges_year = mean(discharges)
