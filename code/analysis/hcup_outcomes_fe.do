@@ -280,8 +280,12 @@ xtset `panelvar_id' year, yearly
 		* MDC log counts
 		local i 1
 		foreach yvar of local y_mdc_logs {
-			* Adjust aweight for specific mdc
-			local aweight_opt [aweight=patients_mdc`cd']
+			* Adjust aweight for specific MDC
+			if `aweight'==1 {
+				local cd = substr("`yvar'", 5, 1)
+
+				local aweight_opt [aweight=patients_mdc`cd']
+			}
 
 			local model "m_`yvar'"
 			local payer: word `i' of `pay_labels'
@@ -313,6 +317,13 @@ xtset `panelvar_id' year, yearly
 		* MDC proportions
 		local i 1
 		foreach yvar of local y_mdc_props {
+			* Adjust aweight for specific MDC
+			if `aweight'==1 {
+				local cd = substr("`yvar'", 5, 1)
+
+				local aweight_opt [aweight=patients_mdc`cd']
+			}
+			
 			local model "m_`yvar'"
 			local payer: word `i' of `pay_labels'
 			if `i'==5 local i 1
