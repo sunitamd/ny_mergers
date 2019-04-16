@@ -49,6 +49,11 @@ use pay1 visitlink mdc ahaid year using "$proj_dir/ny_mergers/data_sidclean/sid_
 
     drop if ahaid==""
 
+    * reshape wide
+    rename patients patients_mdc
+
+    reshape wide patients_mdc, i(ahaid year) j(mdc)
+
     * Save
     save "$proj_dir/ny_mergers/data_analytic/hospital_weights.dta", replace
     !chmod g+rw "$proj_dir/ny_mergers/data_analytic/hospital_weights.dta"
