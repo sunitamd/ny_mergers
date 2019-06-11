@@ -87,7 +87,6 @@ esttab all_di_u medicaid_di_u private_di_u, mtitles( "All" "Medicaid" "Private")
 
 *adjusted with charlson score
 local indvar_wgt hhi_hosp i.charlindex i.female i.age_grp i.race
-xtset ahaidstg 
 qui xtreg readrt `indvar_wgt' i.year, fe
 qui eststo all_re
 qui xtreg readrt `indvar_wgt' i.year if pay1==2, fe
@@ -105,7 +104,6 @@ qui eststo private_di
 esttab all_di medicaid_di private_di, mtitles( "All" "Medicaid" "Private") p b
 
 * HHI_merger 
-xtset ahaidstg
 local indvar_merg hhi_merg i.charlindex i.female i.age_grp i.race
 qui xtreg readrt `indvar_merg' i.year, fe
 qui eststo all_re
@@ -122,6 +120,5 @@ qui eststo medicaid_di
 qui xtreg mortrt `indvar_merg' i.year if pay1==3, fe
 qui eststo private_di
 esttab all_di medicaid_di private_di, mtitles( "All" "Medicaid" "Private") p b
-
 
 log close
