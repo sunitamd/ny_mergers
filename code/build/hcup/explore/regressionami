@@ -1,0 +1,127 @@
+log using regressionami_061119, replace
+cd "/gpfs/data/desailab/home/ny_mergers/data_sidclean"
+use "/gpfs/data/desailab/home/ny_mergers/data_sidclean/ami_index.dta", clear
+ 
+	*merging the hcup with hosp data
+merge m:1 ahaid year using  "/gpfs/data/desailab/home/ny_mergers/data_analytic/hospital.dta", generate(merge2)
+merge m:1 visitlink using "/gpfs/data/desailab/home/ny_mergers/charl_ami.dta", generate(merge3)
+
+label define payers 1 "medicare" 2 "medicaid" 3 "private" 4 "self" 5 "no charge" 6 "other"
+label values pay1 payers
+		
+	/*variable for hospitals never merged*/
+bysort ahaid: egen non_m= min(post_target == 0 & post_acquirer==0)
+	/*create variable for any target hospital that has mergered, regarless of pre-post status*/
+bysort ahaid: egen pre_post= max(post_target)
+	/*specifically creates variable for pre-merger target hospitals*/
+gen pre_m_t= post_target==0 & pre_post==1
+	/*same process for the acquirers*/
+bysort ahaid: egen pre_post_a= max(post_acquirer)
+gen pre_m_a= post_acquirer==0 & pre_post_a==1
+
+	/*create one combined variable to differentitate hospitals based on ownership; label*/
+gen own_status= .
+replace own_status= 0 if own_np2==1
+replace own_status=1 if own_fp2==1
+replace own_status= 2 if own_gov2==1
+label define own_status_lbl 0"Non-Profit" 1"For-Profit" 2"Government Owned"
+label values own_status own_status_lbl
+
+	/*create one variable for the merger status of target and acquired hospitals; label*/
+gen merger_status= 0
+replace merger_status= 1 if non_m==1
+replace merger_status= 2 if pre_m_t==1
+replace merger_status=3 if post_target==1
+replace merger_status= 4 if pre_m_a==1
+replace merger_status=5 if post_acquirer==1
+label define merg_status_lbl 1"Non-Merger" 2"Pre-Merger Target" 3"Post-Merger Target" 4"Pre-Merger Acquirer" 5"Post-Merger Acquirer"
+label values merger_status merg_status_lbl
+
+bys ahaid year: egen totdied= total(died)
+by ahaid year: egen totidx= total(idx_new)
+by ahaid year: gen mortrt= totdied/totidx
+bys ahaid year: egen totreadm= total(resultin_readm)
+by ahaid year: gen readrt= totreadm/totidx
+
+*demo exclusions and keep ED only
+drop if age < 20
+drop if age<65 & pay1==1
+*keep if asource==1
+
+*sum # readm and mortality and the rates
+sum totreadm
+sum totreadm if pay1==2
+sum totreadm if pay1==3
+
+sum totdied
+sum totdied if pay1==2
+sum totdied if pay1==3
+
+sum readrt
+sum readrt if pay1==2
+sum readrt if pay1==3
+
+sum mortrt
+sum mortrt if pay1==2
+sum mortrt if pay1==3
+
+*unadjusted regressons for all, medicaid and private for mortality and readmission rt
+destring ahaid, gen(ahaidstg)
+xtset ahaidstg 
+qui xtreg readrt hhi_hosp i.year, fe
+qui eststo all_re_u
+qui xtreg readrt hhi_hosp i.year if pay1==2, fe
+qui eststo medicaid_re_u
+qui xtreg readrt hhi_hosp i.year if pay1==3, fe
+qui eststo private_re_u
+esttab all_re_u medicaid_re_u private_re_u, mtitles( "All" "Medicaid" "Private") p b
+
+qui xtreg mortrt hhi_hosp i.year, fe
+qui eststo all_di_u
+qui xtreg mortrt hhi_hosp i.year if pay1==2, fe
+qui eststo medicaid_di_u
+qui xtreg mortrt hhi_hosp i.year if pay1==3, fe
+qui eststo private_di_u
+esttab all_di_u medicaid_di_u private_di_u, mtitles( "All" "Medicaid" "Private") p b
+
+
+*adjusted with charlson score
+local indvar_wgt hhi_hosp i.charlindex i.female i.age_grp i.race
+xtset ahaidstg 
+qui xtreg readrt `indvar_wgt' i.year, fe
+qui eststo all_re
+qui xtreg readrt `indvar_wgt' i.year if pay1==2, fe
+qui eststo medicaid_re
+qui xtreg readrt `indvar_wgt' i.year if pay1==3, fe
+qui eststo private_re
+esttab all_re medicaid_re private_re, mtitles( "All" "Medicaid" "Private") p b
+
+qui xtreg mortrt `indvar_wgt' i.year, fe
+qui eststo all_di
+qui xtreg mortrt `indvar_wgt' i.year if pay1==2, fe
+qui eststo medicaid_di
+qui xtreg mortrt `indvar_wgt' i.year if pay1==3, fe
+qui eststo private_di
+esttab all_di medicaid_di private_di, mtitles( "All" "Medicaid" "Private") p b
+
+* HHI_merger 
+xtset ahaidstg
+local indvar_merg hhi_merg i.charlindex i.female i.age_grp i.race
+qui xtreg readrt `indvar_merg' i.year, fe
+qui eststo all_re
+qui xtreg readrt `indvar_merg' i.year if pay1==2, fe
+qui eststo medicaid_re
+qui xtreg readrt `indvar_merg' i.year if pay1==3, fe
+qui eststo private_re
+esttab all_re medicaid_re private_re, mtitles( "All" "Medicaid" "Private") p b
+
+qui xtreg mortrt `indvar_merg' i.year, fe
+qui eststo all_di
+qui xtreg mortrt `indvar_merg' i.year if pay1==2, fe
+qui eststo medicaid_di
+qui xtreg mortrt `indvar_merg' i.year if pay1==3, fe
+qui eststo private_di
+esttab all_di medicaid_di private_di, mtitles( "All" "Medicaid" "Private") p b
+
+
+log close
