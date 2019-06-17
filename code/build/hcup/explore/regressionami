@@ -1,14 +1,14 @@
-log using regressionami_061119, replace
+log using regressionami_061719, replace
 cd "/gpfs/data/desailab/home/ny_mergers/data_sidclean"
 use "/gpfs/data/desailab/home/ny_mergers/data_sidclean/ami_index.dta", clear
- 
+
 	*merging the hcup with hosp data
 merge m:1 ahaid year using  "/gpfs/data/desailab/home/ny_mergers/data_analytic/hospital.dta", generate(merge2)
 merge m:1 visitlink using "/gpfs/data/desailab/home/ny_mergers/charl_ami.dta", generate(merge3)
 
 label define payers 1 "medicare" 2 "medicaid" 3 "private" 4 "self" 5 "no charge" 6 "other"
 label values pay1 payers
-		
+
 	/*variable for hospitals never merged*/
 bysort ahaid: egen non_m= min(post_target == 0 & post_acquirer==0)
 	/*create variable for any target hospital that has mergered, regarless of pre-post status*/
@@ -64,61 +64,32 @@ sum readrt if pay1==3
 sum mortrt
 sum mortrt if pay1==2
 sum mortrt if pay1==3
+destring ahaid, gen(ahaidst)
+xtset ahaidst
+foreach y in readrt mortrt{
+	foreach x in hhi_hosp hhi_merger hhi_closure{
+		cap drop `adj`x'' all_`y'_`x' mcare_`y'_`x' mcaid_`y'_`x' priv_`y'_`x' all_`y'_adj`x' mcare_`y'_adj`x' mcaid_`y'_adj`x priv_`y'_adj`x
+		qui xtreg `y' `x' i.year, fe vce(cl county)
+		qui eststo all_`y'_`x'
+		qui xtreg `y' `x' i.year if pay1==1, fe vce(cl county)
+		qui eststo mcare_`y'_`x'
+		qui xtreg `y' `x' i.year if pay1==2, fe vce(cl county)
+		qui eststo mcaid_`y'_`x'
+		qui xtreg `y' `x' i.year if pay1==3, fe vce(cl county)
+		qui eststo priv_`y'_`x'
 
-*unadjusted regressons for all, medicaid and private for mortality and readmission rt
-destring ahaid, gen(ahaidstg)
-xtset ahaidstg 
-qui xtreg readrt hhi_hosp i.year, fe
-qui eststo all_re_u
-qui xtreg readrt hhi_hosp i.year if pay1==2, fe
-qui eststo medicaid_re_u
-qui xtreg readrt hhi_hosp i.year if pay1==3, fe
-qui eststo private_re_u
-esttab all_re_u medicaid_re_u private_re_u, mtitles( "All" "Medicaid" "Private") p b
+		local adj`x' `x' charlindex i.female i.age_grp i.race total_enroll_log
+		qui xtreg `y' `adj`x'' i.year, fe vce(cl county)
+		qui eststo all_`y'_adj`x'
+		qui xtreg `y' `adj`x'' i.year if pay1==1, fe vce(cl county)
+		qui eststo mcare_`y'_adj`x'
+		qui xtreg `y' `adj`x'' i.year if pay1==2, fe vce(cl county)
+		qui eststo mcaid_`y'_adj`x'
+		qui xtreg `y' `adj`x'' i.year if pay1==3, fe vce(cl county)
+		qui eststo priv_`y'_adj`x'
 
-qui xtreg mortrt hhi_hosp i.year, fe
-qui eststo all_di_u
-qui xtreg mortrt hhi_hosp i.year if pay1==2, fe
-qui eststo medicaid_di_u
-qui xtreg mortrt hhi_hosp i.year if pay1==3, fe
-qui eststo private_di_u
-esttab all_di_u medicaid_di_u private_di_u, mtitles( "All" "Medicaid" "Private") p b
+		estout all_`y'_`x' mcare_`y'_`x' mcaid_`y'_`x' priv_`y'_`x' all_`y'_adj`x' mcare_`y'_adj`x'  mcaid_`y'_adj`x' priv_`y'_adj`x', keep(`x') title(`y' `x') mlabels( "All-Payers" "Mcare" "Mcaid" "Private" "All-Payers" "Mcare" "Mcaid" "Private") mgroup("Unadjusted" "Adjusted", pattern(1 0 0 0 1 0 0 0) span) modelwidth(7)  cells((b p) se)
 
-
-*adjusted with charlson score
-local indvar_wgt hhi_hosp i.charlindex i.female i.age_grp i.race
-qui xtreg readrt `indvar_wgt' i.year, fe
-qui eststo all_re
-qui xtreg readrt `indvar_wgt' i.year if pay1==2, fe
-qui eststo medicaid_re
-qui xtreg readrt `indvar_wgt' i.year if pay1==3, fe
-qui eststo private_re
-esttab all_re medicaid_re private_re, mtitles( "All" "Medicaid" "Private") p b
-
-qui xtreg mortrt `indvar_wgt' i.year, fe
-qui eststo all_di
-qui xtreg mortrt `indvar_wgt' i.year if pay1==2, fe
-qui eststo medicaid_di
-qui xtreg mortrt `indvar_wgt' i.year if pay1==3, fe
-qui eststo private_di
-esttab all_di medicaid_di private_di, mtitles( "All" "Medicaid" "Private") p b
-
-* HHI_merger 
-local indvar_merg hhi_merg i.charlindex i.female i.age_grp i.race
-qui xtreg readrt `indvar_merg' i.year, fe
-qui eststo all_re
-qui xtreg readrt `indvar_merg' i.year if pay1==2, fe
-qui eststo medicaid_re
-qui xtreg readrt `indvar_merg' i.year if pay1==3, fe
-qui eststo private_re
-esttab all_re medicaid_re private_re, mtitles( "All" "Medicaid" "Private") p b
-
-qui xtreg mortrt `indvar_merg' i.year, fe
-qui eststo all_di
-qui xtreg mortrt `indvar_merg' i.year if pay1==2, fe
-qui eststo medicaid_di
-qui xtreg mortrt `indvar_merg' i.year if pay1==3, fe
-qui eststo private_di
-esttab all_di medicaid_di private_di, mtitles( "All" "Medicaid" "Private") p b
-
+	}
+}
 log close
